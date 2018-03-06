@@ -12,20 +12,29 @@ Project{
         name: { return FileInfo.baseName(path) }
 
         files: [
+            "src/databaseloader.cpp",
+            "src/databaseloader.h",
             "src/audiowaveform.cpp",
             "src/audiowaveform.h",
+            "src/imageloader.cpp",
+            "src/imageloader.h",
             "src/imagemanager.cpp",
             "src/imagemanager.h",
+            "src/pointcloudtreesearch.cpp",
+            "src/pointcloudtreesearch.h",
             "src/segnetcolourinspector.cpp",
             "src/segnetcolourinspector.h",
-            'src/main.cpp',
-            'src/ofApp.cpp',
-            'src/ofApp.h',
+            "src/main.cpp",
+            "src/ofApp.cpp",
+            "src/ofApp.h",
         ]
 
         of.addons: [
             'ofxOsc',
-            'ofxThreadedImageLoader'
+            'ofxThreadedImageLoader',
+            'ofxHDF5',
+            'ofxSpatialHash',
+            'ofxFft'
         ]
 
         // additional flags for the project. the of module sets some

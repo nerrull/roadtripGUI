@@ -5,22 +5,25 @@ ImageManager::ImageManager()
     loaded = false;
     currentFileName = "NONE";
 
+    imgLoader1.setPath(IMAGE_DATA_BASE_PATH);
+    imgLoader2.setPath(SEGNET_DATA_BASE_PATH);
+    imgLoader3.setPath(SEGNET_DATA_BASE_PATH);
+
+
 
 }
 
 //Todo: maybe make this work with the threadedimageloader
 void ImageManager::loadImages(string fileName){
     currentFileName = fileName;
-    string framePath = IMAGE_DATA_BASE_PATH+fileName + ".png";
-    string segnetPath = SEGNET_DATA_BASE_PATH+fileName + "_segnet.png";
-    string uncertaintyPath = SEGNET_DATA_BASE_PATH+fileName + "_heatmap.png";
 
-//    imgLoader1.loadFromDisk(firstFrameImage,framePath );
-//    imgLoader2.loadFromDisk(segnetImage,segnetPath );
-//    imgLoader3.loadFromDisk(heatmapImage,uncertaintyPath );
-    firstFrameImage.load(framePath);
-    segnetImage.load(segnetPath);
-    heatmapImage.load(uncertaintyPath);
+    string frameName= fileName + ".png";
+    string segnetName = fileName + "_segnet.png";
+    string uncertaintyName = fileName + "_heatmap.png";
+
+    firstFrameImage.setFromPixels(*imgLoader1.getImage(frameName));
+    segnetImage.setFromPixels(*imgLoader2.getImage(segnetName));
+    heatmapImage.setFromPixels(*imgLoader3.getImage(uncertaintyName));
     loaded = true;
 
 }
@@ -29,7 +32,7 @@ void ImageManager::draw(int cornerX, int cornerY, int width, int height){
    ofPushMatrix();
    ofSetColor(255);
    ofTranslate(cornerX,cornerY);
-   ofDrawBitmapString(currentFileName, width/2 +15, 15);
+   ofDrawBitmapString(currentFileName, 15, 15);
 
    if (!loaded){
        ofPopMatrix();

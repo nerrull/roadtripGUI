@@ -2,18 +2,19 @@
 #define IMAGEMANAGER_H
 #include "ofMain.h"
 #include "ofxThreadedImageLoader.h"
-
+#include "imageloader.h"
 
 class ImageManager
 {
 public:
     ImageManager();
-    string IMAGE_DATA_BASE_PATH = "/media/rice1902/OuterSpace/dataStore/IMAGE/frames_480/";
-    string SEGNET_DATA_BASE_PATH = "/media/rice1902/OuterSpace/dataStore/IMAGE/segnet/";
+    string IMAGE_DATA_BASE_PATH = "/media/rice1902/OuterSpace1/dataStore/IMAGE/frames_480/";
+    string SEGNET_DATA_BASE_PATH = "/media/rice1902/OuterSpace1/dataStore/IMAGE/segnet/";
     string currentFileName;
-    ofxThreadedImageLoader imgLoader1;
-    ofxThreadedImageLoader imgLoader2;
-    ofxThreadedImageLoader imgLoader3;
+    ImageLoader imgLoader1;
+    ImageLoader imgLoader2;
+    ImageLoader imgLoader3;
+
 
     ofImage firstFrameImage;
     ofImage segnetImage;

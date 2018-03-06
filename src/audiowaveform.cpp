@@ -2,6 +2,7 @@
 
 AudioWaveform::AudioWaveform()
 {
+    spectrogramOffset=0;
     soundBuffer.reserve(INTERNAL_BUFFER_LENGTH);
     drawBuffer.reserve(INTERNAL_BUFFER_LENGTH);
     toggle = False;
@@ -9,6 +10,16 @@ AudioWaveform::AudioWaveform()
         soundBuffer.push_back(0.0f);
         drawBuffer.push_back(0.f);
     }
+
+    fft = ofxFft::create(INTERNAL_BUFFER_LENGTH, OF_FFT_WINDOW_HAMMING);
+
+    spectrogram.allocate(ofGetWidth()/3, ofGetHeight()/3, OF_IMAGE_GRAYSCALE);
+
+    spectrogram.setColor(ofColor::black);
+
+    audioBins.resize(fft->getBinSize());
+
+
 }
 
 void AudioWaveform::receiveBuffer(ofSoundBuffer& buffer){
@@ -22,7 +33,52 @@ void AudioWaveform::receiveBuffer(ofSoundBuffer& buffer){
     //leftBuffer.addTo(rightBuffer);
     std::copy(soundBuffer.begin()+IN_AUDIO_BUFFER_LENGTH, soundBuffer.end(), soundBuffer.begin());
     std::copy(std::begin(rightBuffer.getBuffer()),std::end(rightBuffer.getBuffer()), std::begin(soundBuffer)+lastChunkStart);
+
+
+
+    fft->setSignal(&soundBuffer[0]);
+
+    float* curFft = fft->getAmplitude();
+    memcpy(&audioBins[0], curFft, sizeof(float) * fft->getBinSize());
+
+    float maxValue = 0.;
+    for(int i = 0; i < fft->getBinSize(); i++) {
+        if(abs(audioBins[i]) > maxValue) {
+            maxValue = abs(audioBins[i]);
+        }
+    }
+    maxValue = max(maxValue, 0.1f);
+    for(int i = 0; i < fft->getBinSize(); i++) {
+        audioBins[i] /= maxValue;
+    }
+
+    int spectrogramWidth = (int) spectrogram.getWidth();
+
+    int n = (int) spectrogram.getHeight();
+
+
+    shiftSpectrogram();
+
+    for(int i = 0; i < n; i++) {
+        int j =(n - i - 1) * spectrogramWidth +  spectrogramWidth-1;
+        int logi = ofMap(powFreq(i), powFreq(0), powFreq(n), 0, n);
+        spectrogram.setColor(j, (unsigned char) (255. * audioBins[logi]));
+    }
+
 }
+
+void AudioWaveform::shiftSpectrogram(){
+    int spectrogramWidth = (int) spectrogram.getWidth();
+    int spectrogramHeight= (int) spectrogram.getHeight();
+
+    for (int i = 1 ; i < spectrogramWidth; i++){
+        for (int j = 0 ; j < spectrogramHeight; j++){
+            ofColor color = spectrogram.getColor( i,j );
+            spectrogram.setColor( i-1,j, color );
+        }
+    }
+}
+
 void AudioWaveform::copyBuffer(){
     std::lock_guard<std::mutex> lock(bufferMutex);
     drawBuffer = soundBuffer;
@@ -38,7 +94,6 @@ void AudioWaveform::copyLeftRightBuffer(){
 void AudioWaveform::draw2D(int cx,int cy,int width, int height){
     ofPushMatrix();
     ofTranslate(cx, cy);
-    int end = INTERNAL_BUFFER_LENGTH*4;
 
     //Copy the internal buffer
     copyLeftRightBuffer();
@@ -51,11 +106,10 @@ void AudioWaveform::draw2D(int cx,int cy,int width, int height){
     ofSetLineWidth(1);
 
     //ofBeginShape();
-    int step = INTERNAL_BUFFER_LENGTH/width;
     for (unsigned int i = 0; i < IN_AUDIO_BUFFER_LENGTH; i++){
         ofSetColor(0, i *255.0/IN_AUDIO_BUFFER_LENGTH,0);
 
-        ofCircle(width/2 + leftDrawBuffer[i]*4000, height/2 -rightDrawBuffer[i]*4000, 0, 1);
+        ofCircle(width/2 + leftDrawBuffer[i]*2000, height/2 -rightDrawBuffer[i]*2000, 0, 1);
         //ofVertex(width/2 - leftDrawBuffer[i]*4000, height/2 -rightDrawBuffer[i]*4000);
     }
    //   ofEndShape();
@@ -66,13 +120,16 @@ void AudioWaveform::draw2D(int cx,int cy,int width, int height){
 
 void AudioWaveform::draw(int cx,int cy,int width, int height){
 
-    ofPushMatrix();
-    ofTranslate(cx, cy);
-    int end = INTERNAL_BUFFER_LENGTH*4;
+
 
     //Copy the internal buffer
     copyBuffer();
 
+
+
+
+    ofPushMatrix();
+    ofTranslate(cx, cy);
     ofNoFill();
     ofSetLineWidth(1);
     ofDrawRectangle(0, 0, width, height);
@@ -84,12 +141,25 @@ void AudioWaveform::draw(int cx,int cy,int width, int height){
     ofBeginShape();
     int step = INTERNAL_BUFFER_LENGTH/width;
     for (unsigned int i = 0; i < width; i++){
-        ofVertex(i, height/2 -drawBuffer[step*i]*height/2*5);
+        ofVertex(i, height/2 -drawBuffer[step*i]*height/2);
     }
     ofEndShape();
 
-
     ofPopMatrix();
 
+}
+void AudioWaveform::drawSpectrum(int cx,int cy,int width, int height){
+
+    //std::lock_guard<std::mutex> lock(spectroMutex);
+    ofPushMatrix();
+    spectrogram.update();
+    ofTranslate(cx, cy);
+    spectrogram.draw(0, 0,width, height);
+    ofPopMatrix();
+
+}
+
+float AudioWaveform::powFreq(float i) {
+    return powf(i, 3);
 }
 

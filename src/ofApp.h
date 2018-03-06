@@ -5,13 +5,32 @@
 #include "imagemanager.h"
 #include "segnetcolourinspector.h"
 #include "audiowaveform.h"
+#include "databaseloader.h"
+#include "pointcloudtreesearch.h"
 
-#define PORT 44444
+#define PLAYING_RECEIVE_PORT 44445
+#define CONTROL_RECEIVE_PORT 44444
+#define SEND_PORT 33333
+
 #define NUM_MSG_STRINGS 20
 
 class ofApp : public ofBaseApp{
 
 public:
+
+    ImageManager imageManager;
+    SegnetColourInspector colourInspector;
+    AudioWaveform waveform;
+    DatabaseLoader databaseLoader;
+    PointCloudTreeSearch* pointCloudTree;
+
+    ofxOscReceiver receiver_controller;
+    ofxOscReceiver receiver_playing;
+
+    ofxOscSender sender;
+
+    ofTrueTypeFont font;
+    ofSoundStream soundStream;
 
     int rectangleWidth;
     int rectangleMaxHeight;
@@ -20,16 +39,29 @@ public:
     int rectangleTop;
     int minHeight;
     int activeIndex;
-    float* featureValues;
+    bool *activeIndexes;
+    int * inactiveCounter;
+    int activityTimer;
+    vector<float>featureValues;
+    float* desiredFeatureValues;
     bool audioToggle;
-    ImageManager imageManager;
-    SegnetColourInspector colourInspector;
-    ofxOscReceiver receiver;
-    AudioWaveform waveform;
-    ofSoundStream soundStream;
+    bool desireChanged = false;
+    bool speedChanged = false;
+    uint64_t search_timer;
+    int speedSetting;
+
+    vector<string> lastVideos;
+    std::vector<string> featureNames;
+
 
 
     void getOscMessage();
+    void drawColors();
+    float getColorValue(string id);
+    void initAudio();
+    bool vectorsAreEqual(vector<string>v1, vector<string> v2);
+    void publishVideos(vector<string> v1);
+    void publishSpeed();
 
 
     void setup();
@@ -48,6 +80,9 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     void audioIn(ofSoundBuffer & input);
+
+
+
 
 
 
