@@ -9,7 +9,9 @@
 #include "pointcloudtreesearch.h"
 
 #define PLAYING_RECEIVE_PORT 44445
-#define CONTROL_RECEIVE_PORT 44444
+#define PYTHON_CONTROL_RECEIVE_PORT 44444
+#define CONTROL_RECEIVE_PORT 9002
+
 #define SEND_PORT 33333
 
 #define NUM_MSG_STRINGS 20
@@ -18,13 +20,16 @@ class ofApp : public ofBaseApp{
 
 public:
 
-    ImageManager imageManager;
+    ImageManager* imageManager;
     SegnetColourInspector colourInspector;
     AudioWaveform waveform;
     DatabaseLoader databaseLoader;
     PointCloudTreeSearch* pointCloudTree;
 
+    ofxOscReceiver receiver_python_controller;
     ofxOscReceiver receiver_controller;
+
+
     ofxOscReceiver receiver_playing;
 
     ofxOscSender sender;
@@ -43,10 +48,13 @@ public:
     int * inactiveCounter;
     int activityTimer;
     vector<float>featureValues;
+    vector<float>lastFeatureValues;
+
     float* desiredFeatureValues;
     bool audioToggle;
     bool desireChanged = false;
     bool speedChanged = false;
+    bool RELEASE_MODE;
     uint64_t search_timer;
     int speedSetting;
 
@@ -62,7 +70,7 @@ public:
     bool vectorsAreEqual(vector<string>v1, vector<string> v2);
     void publishVideos(vector<string> v1);
     void publishSpeed();
-
+    void drawControls(int,int);
 
     void setup();
     void update();

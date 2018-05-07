@@ -11,8 +11,12 @@ void ofApp::setup(){
     glPointSize(2.0);
     font.load("verdana.ttf", 12);
     initAudio();
+    RELEASE_MODE = false;
+    if (RELEASE_MODE) imageManager = new ImageManager();
 
     std::cout << "listening for osc messages on port " << CONTROL_RECEIVE_PORT << " and "<<  PLAYING_RECEIVE_PORT<<"\n";
+    receiver_python_controller.setup( PYTHON_CONTROL_RECEIVE_PORT );
+
     receiver_controller.setup( CONTROL_RECEIVE_PORT );
     receiver_playing.setup( PLAYING_RECEIVE_PORT );
 
@@ -23,10 +27,10 @@ void ofApp::setup(){
 
     string db_path = "/media/rice1902/OuterSpace1/dataStore/database.h5";
     databaseLoader.loadHDF5Data(db_path);
+
     pointCloudTree = new PointCloudTreeSearch(&databaseLoader);
     pointCloudTree->initPoints();
 
-    featureValues;
     activeIndexes = new bool[24];
     inactiveCounter = new int[24];
     desiredFeatureValues = new float[24];
@@ -35,6 +39,8 @@ void ofApp::setup(){
     activityTimer =0;
     for (int i=0; i<24; i++) {
         featureValues.push_back(0.0);
+        lastFeatureValues.push_back(0.0);
+
         desiredFeatureValues[i]=0.0;
         activeIndexes[i]=false;
         inactiveCounter[i]=0;
@@ -55,11 +61,13 @@ void ofApp::initAudio(){
 //--------------------------------------------------------------
 void ofApp::update(){
     getOscMessage();
-    imageManager.update();
-    if (desireChanged){
-        pointCloudTree->updateActiveCoordinates(desiredFeatureValues, activeIndexes);
-        desireChanged=false;
-    }
+    if (RELEASE_MODE) imageManager->update();
+    pointCloudTree->updateActiveCoordinates(desiredFeatureValues, activeIndexes);
+
+//    if (desireChanged){
+//        pointCloudTree->updateActiveCoordinates(desiredFeatureValues, activeIndexes);
+//        desireChanged=false;
+//    }
     uint64_t currentTime = ofGetElapsedTimeMillis();
     if ((currentTime - search_timer)>100)
     {
@@ -79,7 +87,6 @@ void ofApp::draw(){
 
 
     ofBackground(0);
-    int offset =spaceRemainder/2;
     ofSetColor(255);
 
     std::stringstream strm;
@@ -93,11 +100,43 @@ void ofApp::draw(){
     waveform.drawSpectrum(0, windowHeight/3 , windowWidth/3, windowHeight/3 -10 );
 
     colourInspector.draw(0,windowHeight/3, windowWidth/3, windowHeight/3 -10);
-    imageManager.draw(windowWidth/3, 0, windowWidth/3, 2*windowHeight/3 -10);
     pointCloudTree->draw();
 
-    drawColors();
+    if (RELEASE_MODE) imageManager->draw(2*windowWidth/3, 0, windowWidth/3, 2*windowHeight/3 -10);
+
+    //drawColors();
+
+    drawControls(windowWidth, windowHeight);
     bool human_activity = False;
+
+
+    for(int i = 0; i<23; i++){
+        if (activeIndexes[i]==true){
+            human_activity=True;
+        }
+    }
+
+    if (speedChanged){
+        publishSpeed();
+        human_activity=True;
+        speedChanged = false;
+    }
+
+    //If no activity go to low volume low playback speed
+    if (!human_activity){
+        desiredFeatureValues[0]=0.0;
+        activeIndexes[0]=True;
+        pointCloudTree->updateActiveCoordinates(desiredFeatureValues, activeIndexes);
+    }
+}
+
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
+void ofApp::drawControls(int windowWidth, int windowHeight){
+
+    int offset =spaceRemainder/2;
 
     //Draw speed control
     {
@@ -132,7 +171,6 @@ void ofApp::draw(){
     //Draw feature controls
     for(int i = 0; i<23; i++){
         if (activeIndexes[i]==true){
-            human_activity=True;
             inactiveCounter[i]+=1;
         }
         //5 seconds
@@ -151,7 +189,10 @@ void ofApp::draw(){
 
         offset+=rectangleOffset;
         float value =ofRandom(0.,1.);
-        int height = max(minHeight, int(featureValues[i] * rectangleMaxHeight));
+        float diff = featureValues[i] - lastFeatureValues[i];
+        float inc = sgn(diff)*diff*diff;
+        lastFeatureValues[i]+=inc;
+        int height = max(minHeight, int((lastFeatureValues[i] * rectangleMaxHeight)));
         ofNoFill();
         ofSetLineWidth(1);
         ofDrawRectangle(offset,rectangleTop, rectangleWidth, ofGetHeight()/3);
@@ -174,21 +215,6 @@ void ofApp::draw(){
 
         offset+=rectangleWidth;
     }
-
-    if (speedChanged){
-        publishSpeed();
-        human_activity=True;
-        speedChanged = false;
-    }
-
-    //If no activity go to low volume low playback speed
-    if (!human_activity){
-        desiredFeatureValues[0]=0.0;
-        activeIndexes[0]=True;
-        pointCloudTree->updateActiveCoordinates(desiredFeatureValues, activeIndexes);
-    }
-
-
 }
 
 float ofApp::getColorValue(string id){
@@ -213,7 +239,7 @@ void ofApp::drawColors(){
 
     int windowWidth = ofGetWidth();
     ofPushMatrix();
-    ofTranslate(windowWidth/2, 20);
+    ofTranslate(5*windowWidth/6, 20);
     int boxWidth = windowWidth/6;
 
     ofColor c1, c2,c3,c4,c5;
@@ -321,7 +347,7 @@ void ofApp::windowResized(int w, int h){
     minHeight = 7;
     rectangleMaxHeight = ofGetHeight()*1/3;
 
-    pointCloudTree->setViewPort(2*ofGetWidth()/3, 0, ofGetWidth()/3, 2*  ofGetHeight()/3);
+    pointCloudTree->setViewPort(ofGetWidth()/3, 0, ofGetWidth()/3, 2*  ofGetHeight()/3);
 
     ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Offset "<<rectangleOffset;
     ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Remaining space "<< spaceRemainder;
@@ -347,7 +373,8 @@ void ofApp::getOscMessage() {
         if ( m.getAddress().compare( string("/PLAYING_VIDEO") ) == 0 )
         {
             string fileName = m.getArgAsString(0);
-            imageManager.loadImages(fileName);
+            if (RELEASE_MODE) imageManager->loadImages(fileName);
+            lastFeatureValues = featureValues;
             featureValues = databaseLoader.getFeaturesFromName(fileName);
             pointCloudTree->setPlayingIndex(databaseLoader.getVideoIndexFromName(fileName));
 
@@ -361,11 +388,11 @@ void ofApp::getOscMessage() {
 
     }
     // check for waiting messages
-    while( receiver_controller.hasWaitingMessages() )
+    while( receiver_python_controller.hasWaitingMessages() )
     {
         // get the next message
         ofxOscMessage m;
-        receiver_controller.getNextMessage( &m );
+        receiver_python_controller.getNextMessage( &m );
 
         // check for mouse button message
         if ( m.getAddress().compare( string("/FEATURE_DIFFS") ) == 0 )
@@ -418,7 +445,7 @@ void ofApp::getOscMessage() {
             string fileName = m.getArgAsString(24);
             activeIndex = m.getArgAsInt(25);
 
-            imageManager.loadImages(fileName);
+            //imageManager.loadImages(fileName);
             //featureValues = new float[24];
             //std::memcpy(featureValues, values.getData(), 24*sizeof(float));
             ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Message received : " ;
@@ -444,8 +471,43 @@ void ofApp::getOscMessage() {
             ofLogError()<<  m.getAddress();
 
         }
-
     }
+
+    while( receiver_controller.hasWaitingMessages() )
+    {
+        // get the next message
+        ofxOscMessage m;
+        receiver_controller.getNextMessage( &m );
+
+        if ( m.getAddress().compare( string("/ENCODER/STEP") ) == 0 )
+        {
+            ofLogError(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
+            int i = m.getArgAsInt(0)-1;
+            float step = float(m.getArgAsInt(1) -0.5)*2/100.;
+            desiredFeatureValues[i] +=step;
+            desiredFeatureValues[i] =CLAMP(desiredFeatureValues[i], 0., 1.);
+            activeIndexes[i]=true;
+            inactiveCounter[i] = 0;
+            desireChanged=true;
+            activityTimer = 0;
+            //ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Values : " << featureValues[0]<<featureValues[23] ;
+        }
+        if ( m.getAddress().compare( string("/ENCODER/SWT") ) == 0 )
+        {
+            ofLogError(ofToString(ofGetElapsedTimef(),3)) << " SWT Message received : " ;
+            int idx = m.getArgAsInt(0);
+            int swt = m.getArgAsInt(0);
+
+
+            //ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Values : " << featureValues[0]<<featureValues[23] ;
+        }
+
+        else
+        {
+            ofLogError()<<  m.getAddress();
+        }
+    }
+
 }
 
 bool ofApp::vectorsAreEqual(vector<string>v1, vector<string> v2){

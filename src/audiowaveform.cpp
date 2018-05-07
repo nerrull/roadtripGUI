@@ -119,20 +119,13 @@ void AudioWaveform::draw2D(int cx,int cy,int width, int height){
 }
 
 void AudioWaveform::draw(int cx,int cy,int width, int height){
-
-
-
     //Copy the internal buffer
     copyBuffer();
-
-
-
-
     ofPushMatrix();
     ofTranslate(cx, cy);
     ofNoFill();
     ofSetLineWidth(1);
-    ofDrawRectangle(0, 0, width, height);
+    //ofDrawRectangle(0, 0, width, height);
 
     ofSetColor(255, 255, 255);
 

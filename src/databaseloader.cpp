@@ -50,25 +50,23 @@ void DatabaseLoader::loadHDF5Data(string database_path){
     feature_names_ptr= hdf5File.loadDataSet("feature_names");
     size_t  name_size = feature_names_ptr->getDataSize();
     int num_names = feature_names_ptr->getDimensionSize(0);
-    int num_chars = 30;
 
-    uint8_t *characters = new uint8_t[num_names*30];
+    uint8_t *characters = new uint8_t[num_names*STRING_LENGTH];
     feature_names_ptr->read(characters);
-    char * name = new char[30];
+    char * name = new char[STRING_LENGTH];
 
     for( int row =0; row<num_names; row++){
-        std::copy(characters +row*30,characters +(row+1)*30,name );
+        std::copy(characters +row*STRING_LENGTH,characters +(row+1)*STRING_LENGTH,name );
         feature_names.push_back(name);
     }
 
     video_names_ptr= hdf5File.loadDataSet("video_names");
     num_videos = video_names_ptr->getDimensionSize(0);
-    num_chars = 30;
 
-    characters = new uint8_t[num_videos*30];
+    characters = new uint8_t[num_videos*STRING_LENGTH];
     video_names_ptr->read(characters);
     for( int row =0; row<num_videos; row++){
-        std::copy(characters +row*30,characters +(row+1)*30,name );
+        std::copy(characters +row*STRING_LENGTH,characters +(row+1)*STRING_LENGTH,name );
         video_names.push_back(name);
     }
     hdf5File.close();

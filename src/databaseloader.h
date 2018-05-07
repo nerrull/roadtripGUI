@@ -4,6 +4,7 @@
 #include "ofMain.h"
 #include "ofxHDF5.h"
 
+#define STRING_LENGTH 40
 
 class DatabaseLoader
 {

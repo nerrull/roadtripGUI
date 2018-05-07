@@ -22,15 +22,19 @@ public:
     vector<int> getSearchResultIndexes();
     void setPlayingIndex(int);
     void drawLines();
-
+    void drawCurvyBoy();
+    int curveIterCount = 0;
 
 
     int num_points;
     int drawCount =0;
     int playingIndex =0;
     int targetNumberOfPoints = 15;
-    deque<int> playedPoints;
+    deque<ofVec3f> playedPoints;
     ofPolyline line;
+    ofPolyline twineLine;
+
+    ofMesh playedLine;
 
     DatabaseLoader* db;
     std::vector<ofVec3f> points;
@@ -46,7 +50,7 @@ public:
     ofVboMesh mesh;
     ofMesh nextMesh;
     int point_step;
-    int MAX_STEPS =60;
+    int MAX_STEPS =30;
     float search_radius;
     float max_search_radius;
 
