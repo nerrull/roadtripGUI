@@ -1,6 +1,6 @@
 #include "pointcloudtreesearch.h"
 
-PointCloudTreeSearch::PointCloudTreeSearch(DatabaseLoader *database):  hash(points)
+PointCloudTreeSearch::PointCloudTreeSearch(DatabaseLoader *database):  hash(search_points)
 {
     db = database;
     search_radius = 5.;
@@ -54,6 +54,8 @@ void PointCloudTreeSearch::initPoints(){
         mesh.addVertex(point);
         mesh.addColor(c);
         point_steps.push_back(ofVec3f(0.,0.,0.));
+        search_points.push_back(point);
+
 
     }
     point_step = MAX_STEPS +1;
@@ -62,41 +64,49 @@ void PointCloudTreeSearch::initPoints(){
 
 void PointCloudTreeSearch::getNearestPoints()
 {
-    // Random walk.
-    uint64_t time = ofGetElapsedTimeMillis();
-    ofVec3f centerPoint = ofVec3f(0.,0.,0.);
+//    // Random walk.
+//    uint64_t time = ofGetElapsedTimeMillis();
+
+      ofVec3f centerPoint = ofVec3f(0.,0.,0.);
+      vector<double> search_point;
+      if (kdTree.getSamples().size()>0){
+        for (int i =0; i < kdTree.getSamples()[0].size(); i++){
+            search_point.push_back(0.);
+        }
+      }
+
+      kdTree.getKNN(search_point, targetNumberOfPoints, search_indexes, search_dists);
 
 
-    searchResults.clear();
+//    searchResults.clear();
 
-    // An estimate of the number of points we are expecting to find.
+//    // An estimate of the number of points we are expecting to find.
 
-    // Estimate the volume of our seach envelope as a cube.
-    // A cube already overestimates a spherical search space.
-    float approxCubicSearchBoxSize = (search_radius * 2 * search_radius * 2 * search_radius * 2);
+//    // Estimate the volume of our seach envelope as a cube.
+//    // A cube already overestimates a spherical search space.
+//    float approxCubicSearchBoxSize = (search_radius * 2 * search_radius * 2 * search_radius * 2);
 
-    // Calculate the volume of our total search space as a cube.
-    float approxCubicSearchSpaceSize = (ofGetWidth() * ofGetHeight() * 2 * 500);
+//    // Calculate the volume of our total search space as a cube.
+//    float approxCubicSearchSpaceSize = (ofGetWidth() * ofGetHeight() * 2 * 500);
 
-    // Determine the percentage of the total search space we expect to capture.
-    float approxPercentageOfTotalPixels = approxCubicSearchBoxSize / approxCubicSearchSpaceSize;
+//    // Determine the percentage of the total search space we expect to capture.
+//    float approxPercentageOfTotalPixels = approxCubicSearchBoxSize / approxCubicSearchSpaceSize;
 
-    // Assuming an uniform distribution of points in our search space,
-    // get a percentage of them.
-    std::size_t approximateNumPointsToFind = points.size() * approxPercentageOfTotalPixels;
-    searchResults.resize(approximateNumPointsToFind);
+//    // Assuming an uniform distribution of points in our search space,
+//    // get a percentage of them.
+//    std::size_t approximateNumPointsToFind = points.size() * approxPercentageOfTotalPixels;
+//    searchResults.resize(approximateNumPointsToFind);
+//    hash.findPointsWithinRadius(centerPoint, search_radius, searchResults);
 
-    hash.findPointsWithinRadius(centerPoint, search_radius, searchResults);
+//    if (searchResults.size()< targetNumberOfPoints){
+//        search_radius += search_radius/10.;
+//        //search_radius = MIN(search_radius, max_search_radius);
+//    }
 
-    if (searchResults.size()< targetNumberOfPoints){
-        search_radius += search_radius/10.;
-        //search_radius = MIN(search_radius, max_search_radius);
-    }
-
-    else if (searchResults.size()> targetNumberOfPoints){
-        search_radius -= search_radius/5.;
-        //search_radius = MAX(search_radius, 1);
-    }
+//    else if (searchResults.size()> targetNumberOfPoints){
+//        search_radius -= search_radius/5.;
+//        //search_radius = MAX(search_radius, 1);
+//    }
 
 }
 
@@ -105,7 +115,6 @@ void PointCloudTreeSearch::update(){
 
     if (playedPoints.size() >10){
         playedPoints.pop_front();
-
     }
 
     if (playedPoints.size() >1){
@@ -114,14 +123,10 @@ void PointCloudTreeSearch::update(){
         ofVec3f p = playedPoints[0];
         line.addVertex(p);
 
-//        playedLine.addVertex(points[idx]);
-//        playedLine.addColor(ofColor(db->colors[idx].r, db->colors[idx].g, db->colors[idx].b, 10));
         for (int pointIndex=1; pointIndex < playedPoints.size(); pointIndex ++){
             p = playedPoints[pointIndex];
             line.curveTo(p);
 
-//            playedLine.addColor(ofColor(db->colors[idx].r, db->colors[idx].g, db->colors[idx].b, 255./playedPoints.size() *(pointIndex+1) ));
-//            playedLine.addVertex(points[idx]);
         }
 
     }
@@ -149,21 +154,19 @@ void PointCloudTreeSearch::draw()
     ofFill();
     ofSetColor(255, 255, 0, 80);
 
-    for (std::size_t i = 0; i < searchResults.size(); ++i)
+    for (std::size_t i = 0; i < search_indexes.size(); ++i)
     {
-        float normalizedDistance = ofMap(searchResults[i].second, search_radius * search_radius, 0, 0, 1, true);
-
-        ofSetColor(255, 255, 0, normalizedDistance * 127);
-
-        ofDrawSphere(points[searchResults[i].first], 0.1);
+        //float normalizedDistance = ofMap(searchResults[i].second, search_radius * search_radius, 0, 0, 1, true);
+        //ofSetColor(255, 255, 0, normalizedDistance * 127);
+        ofDrawSphere(search_points[search_indexes[i]], .5);
     }
 
 
     ofSetColor(255, 0, 0);
-    ofDrawIcoSphere(points[playingIndex], 0.2);
+    ofDrawIcoSphere(search_points[playingIndex], 1.);
     ofSetColor(255);
 
-    line.draw();
+    //line.draw();
     //playedLine.draw();
 
 
@@ -174,7 +177,7 @@ void PointCloudTreeSearch::draw()
 //    s.drawWireframe();
 
     //drawLines();
-    drawCurvyBoy();
+    //drawCurvyBoy();
     ofPopMatrix();
     cam.end();
 
@@ -204,13 +207,11 @@ void PointCloudTreeSearch::drawCurvyBoy(){
 }
 
 void PointCloudTreeSearch::updatePoints(){
-    if (point_step>MAX_STEPS) return;
-    point_step ++;
+
     mesh.clear();
     for (std::size_t i = 0; i < num_points; ++i)
     {
-        points[i] +=point_steps[i];
-        mesh.addVertex(points[i]);
+        mesh.addVertex(search_points[i]);
         mesh.addColor(db->colors[i]);
     }
     hash.buildIndex();
@@ -241,7 +242,7 @@ void PointCloudTreeSearch::updateActiveCoordinates(float *desiredValues, bool* a
         for (int featureIndex=0; featureIndex < num_features; featureIndex++ ){
             if (!activeIndexes[featureIndex]) continue;
             float dist = abs(desiredValues[featureIndex] -db->feature_values[i][featureIndex]);
-            radius +=(dist +epsilon);
+            radius += (dist +epsilon);
             phase += dist-0.5;
         }
         radius = radius*100/num_active;
@@ -286,12 +287,60 @@ void PointCloudTreeSearch::updateCoordinates(){
 
 }
 
+
+
+void PointCloudTreeSearch::updateSearchSpace(float * desiredValues, bool* activeIndexes){
+
+    ofVec3f centerPoint = ofVec3f(0.,0.,0.);
+
+    int num_features = db->feature_values[0].size();
+    int num_active =1;
+    for (int featureIndex=0; featureIndex < num_features; featureIndex++ ){
+        if (activeIndexes[featureIndex]){
+            num_active +=1;
+        }
+    }
+
+    float epsilon = 0.01;
+    search_points.clear();
+    kdTree.clear();
+    for (std::size_t i = 0; i < num_points; ++i){
+        ofVec3f d(epsilon,epsilon,epsilon);
+        vector<double> kd_sample;
+
+        float radius = 1.;
+        int dim_idx =0;
+        float angleY, angleZ;
+        for (int featureIndex=0; featureIndex < num_features; featureIndex++ ){
+            if (!activeIndexes[featureIndex]) continue;
+            float dist = abs(desiredValues[featureIndex] -db->feature_values[i][featureIndex]);
+            radius += (1. -dist )*50/num_active;
+
+            if (dim_idx %2 ==0 ) angleY += TWO_PI*dist/10;
+
+            else angleZ += TWO_PI *dist/10;
+
+            dim_idx++;
+            kd_sample.push_back(dist);
+        }
+
+        float x = radius*sin(angleY)*cos(angleZ);
+        float y = radius*sin(angleY)*sin(angleZ);
+        float z = radius*cos(angleY);
+
+
+        search_points.push_back(ofVec3f(x,y,z));
+        kdTree.addPoint(kd_sample);
+    }
+   kdTree.constructKDTree();
+}
+
 vector<int> PointCloudTreeSearch::getSearchResultIndexes(){
     vector<int> indexes;
 
-    for (std::size_t i = 0; i < searchResults.size(); ++i)
+    for (std::size_t i = 0; i < search_indexes.size(); ++i)
     {
-        indexes.push_back(searchResults[i].first);
+        indexes.push_back(search_indexes[i]);
     }
     return indexes;
 }

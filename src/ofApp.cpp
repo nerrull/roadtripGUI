@@ -25,7 +25,7 @@ void ofApp::setup(){
 
     search_timer =ofGetElapsedTimeMillis();
 
-    string db_path = "/media/rice1902/OuterSpace1/dataStore/database.h5";
+    string db_path = "/media/rice1902/OuterSpace2/dataStore/database.h5";
     databaseLoader.loadHDF5Data(db_path);
 
     pointCloudTree = new PointCloudTreeSearch(&databaseLoader);
@@ -45,6 +45,7 @@ void ofApp::setup(){
         activeIndexes[i]=false;
         inactiveCounter[i]=0;
     }
+    activeIndexes[0]= True;
 
     windowResized(ofGetWidth(),ofGetHeight());
     ofBackground(0);
@@ -62,7 +63,9 @@ void ofApp::initAudio(){
 void ofApp::update(){
     getOscMessage();
     if (RELEASE_MODE) imageManager->update();
-    pointCloudTree->updateActiveCoordinates(desiredFeatureValues, activeIndexes);
+    pointCloudTree->updateSearchSpace(desiredFeatureValues, activeIndexes);
+
+    //pointCloudTree->updateActiveCoordinates(desiredFeatureValues, activeIndexes);
 
 //    if (desireChanged){
 //        pointCloudTree->updateActiveCoordinates(desiredFeatureValues, activeIndexes);
@@ -174,7 +177,7 @@ void ofApp::drawControls(int windowWidth, int windowHeight){
             inactiveCounter[i]+=1;
         }
         //5 seconds
-        if (inactiveCounter[i]>300){
+        if (inactiveCounter[i]>600){
             activeIndexes[i]=false;
             inactiveCounter[i] = 0;
             desireChanged=True;
@@ -514,9 +517,9 @@ bool ofApp::vectorsAreEqual(vector<string>v1, vector<string> v2){
     if (v1.size()!= v2.size()){
         return False;
     }
-//    else if (!std::equal(v1.begin(), v1.begin() + v1.size(), v2.begin())){
-//        return False;
-//    }
+    else if (!std::equal(v1.begin(), v1.begin() + v1.size(), v2.begin())){
+       return False;
+    }
     return True;
 }
 
