@@ -56,7 +56,7 @@ public:
     bool DEV_MODE;
     uint64_t search_timer;
     int speedSetting;
-
+    string current_playing_video;
     vector<string> lastVideos;
     std::vector<string> featureNames;
 
@@ -68,6 +68,7 @@ public:
     void initAudio();
     bool vectorsAreEqual(vector<string>v1, vector<string> v2);
     void publishVideos(vector<string> v1, bool log);
+    void publishVideoNow(string v1, bool log);
     void publishSpeed();
     void drawControls(int,int);
 

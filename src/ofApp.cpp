@@ -44,6 +44,7 @@ void ofApp::setup(){
 
     //Make loudness the only active feature
     featureWeights[0]= 1.;
+    current_playing_video ="";
 
     windowResized(ofGetWidth(),ofGetHeight());
     ofBackground(0);
@@ -71,8 +72,16 @@ void ofApp::update(){
     }
 
     vector<string> videoNames=  databaseLoader.getVideoNamesFromIndexes(pointCloudTree->getSearchResultIndexes());
-    if (!vectorsAreEqual(videoNames, lastVideos) && videoNames.size()>0){
-        publishVideos(videoNames, false);
+
+    if (input_activity){
+        if (current_playing_video != videoNames[0]){
+            publishVideoNow( videoNames[0], True);
+            current_playing_video = videoNames[0];
+        }
+    }
+
+    else if (!vectorsAreEqual(videoNames, lastVideos) && videoNames.size()>0){
+        publishVideos(videoNames, True);
     }
 
     pointCloudTree->update();
@@ -377,11 +386,12 @@ void ofApp::getOscMessage() {
         receiver_playing.getNextMessage( &m );
         if ( m.getAddress().compare( string("/PLAYING_VIDEO") ) == 0 )
         {
-            string fileName = m.getArgAsString(0);
-            if (!DEV_MODE) imageManager->loadImages(fileName);
+            current_playing_video = m.getArgAsString(0);
+
+            if (!DEV_MODE) imageManager->loadImages(current_playing_video);
             lastFeatureValues = featureValues;
-            featureValues = databaseLoader.getFeaturesFromName(fileName);
-            pointCloudTree->setPlayingIndex(databaseLoader.getVideoIndexFromName(fileName));
+            featureValues = databaseLoader.getFeaturesFromName(current_playing_video);
+            pointCloudTree->setPlayingIndex(databaseLoader.getVideoIndexFromName(current_playing_video));
 
 
         }
@@ -543,6 +553,15 @@ void ofApp::publishVideos(vector<string> v1, bool log){
 
         if (log) ofLogError(ofToString(ofGetElapsedTimef(),3))<<v1[i];
     }
+    sender.sendMessage(m);
+    publishSpeed();
+}
+
+void ofApp::publishVideoNow(string v1, bool log){
+    ofxOscMessage m;
+    if (log) ofLogError(ofToString(ofGetElapsedTimef(),3))<<"Sending "<< v1<<"to play now"<<endl ;
+    m.setAddress("/PLAY_NOW");
+    m.addStringArg(v1);
     sender.sendMessage(m);
 }
 
