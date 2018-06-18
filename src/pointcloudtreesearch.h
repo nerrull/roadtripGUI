@@ -2,7 +2,6 @@
 #define POINTCLOUDVISUALIZER_H
 
 #include "ofMain.h"
-#include "ofxSpatialHash.h"
 #include "databaseloader.h"
 #include "ofxKDTree.h"
 
@@ -45,9 +44,6 @@ public:
     std::vector<ofVec3f> points;
     std::vector<ofVec3f> point_steps;
     vector<ofColor> colors;
-
-    ofx::KDTree<ofVec3f> hash;
-    ofx::KDTree<ofVec3f>::SearchResults searchResults;
 
     ofxKDTree kdTree;
     vector<size_t> search_indexes;

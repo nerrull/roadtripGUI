@@ -1,6 +1,6 @@
 #include "pointcloudtreesearch.h"
 
-PointCloudTreeSearch::PointCloudTreeSearch(DatabaseLoader *database):  hash(search_points)
+PointCloudTreeSearch::PointCloudTreeSearch(DatabaseLoader *database)
 {
     db = database;
     search_radius = 5.;
@@ -59,7 +59,6 @@ void PointCloudTreeSearch::initPoints(){
 
     }
     point_step = MAX_STEPS +1;
-    hash.buildIndex();
 }
 
 void PointCloudTreeSearch::getNearestPoints()
@@ -76,38 +75,6 @@ void PointCloudTreeSearch::getNearestPoints()
       }
 
       kdTree.getKNN(search_point, targetNumberOfPoints, search_indexes, search_dists);
-
-
-//    searchResults.clear();
-
-//    // An estimate of the number of points we are expecting to find.
-
-//    // Estimate the volume of our seach envelope as a cube.
-//    // A cube already overestimates a spherical search space.
-//    float approxCubicSearchBoxSize = (search_radius * 2 * search_radius * 2 * search_radius * 2);
-
-//    // Calculate the volume of our total search space as a cube.
-//    float approxCubicSearchSpaceSize = (ofGetWidth() * ofGetHeight() * 2 * 500);
-
-//    // Determine the percentage of the total search space we expect to capture.
-//    float approxPercentageOfTotalPixels = approxCubicSearchBoxSize / approxCubicSearchSpaceSize;
-
-//    // Assuming an uniform distribution of points in our search space,
-//    // get a percentage of them.
-//    std::size_t approximateNumPointsToFind = points.size() * approxPercentageOfTotalPixels;
-//    searchResults.resize(approximateNumPointsToFind);
-//    hash.findPointsWithinRadius(centerPoint, search_radius, searchResults);
-
-//    if (searchResults.size()< targetNumberOfPoints){
-//        search_radius += search_radius/10.;
-//        //search_radius = MIN(search_radius, max_search_radius);
-//    }
-
-//    else if (searchResults.size()> targetNumberOfPoints){
-//        search_radius -= search_radius/5.;
-//        //search_radius = MAX(search_radius, 1);
-//    }
-
 }
 
 void PointCloudTreeSearch::update(){
@@ -214,8 +181,6 @@ void PointCloudTreeSearch::updatePoints(){
         mesh.addVertex(search_points[i]);
         mesh.addColor(db->colors[i]);
     }
-    hash.buildIndex();
-
 }
 
 
@@ -318,7 +283,7 @@ void PointCloudTreeSearch::updateSearchSpace(float * desiredValues, bool* active
 
             if (dim_idx %2 ==0 ) angleY += TWO_PI*dist/10;
 
-            else angleZ += TWO_PI *dist/10;
+            else angleZ += TWO_PI *dist/30;
 
             dim_idx++;
             kd_sample.push_back(dist);

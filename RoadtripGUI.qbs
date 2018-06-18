@@ -33,8 +33,8 @@ Project{
             'ofxOsc',
             'ofxThreadedImageLoader',
             'ofxHDF5',
-            'ofxSpatialHash',
-            'ofxFft'
+            'ofxFft',
+            'ofxKDTree'
         ]
 
         // additional flags for the project. the of module sets some

@@ -1,1 +1,6 @@
-bin/
+bin/RoadtripGUI_debug
+bin/RoadtripGUI
+
+.*~
+*.*~
+*.autosave
