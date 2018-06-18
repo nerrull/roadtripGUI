@@ -28,10 +28,7 @@ public:
 
     ofxOscReceiver receiver_python_controller;
     ofxOscReceiver receiver_controller;
-
-
     ofxOscReceiver receiver_playing;
-
     ofxOscSender sender;
 
     ofTrueTypeFont font;
@@ -43,18 +40,20 @@ public:
     int spaceRemainder;
     int rectangleTop;
     int minHeight;
-    int activeIndex;
-    bool *activeIndexes;
-    int * inactiveCounter;
+
+    vector<float> featureWeights;
+    vector<int> inactiveCounter;
+    vector<float>desiredFeatureValues;
+
     int activityTimer;
     vector<float>featureValues;
     vector<float>lastFeatureValues;
 
-    float* desiredFeatureValues;
+    bool input_activity = false;
     bool audioToggle;
     bool desireChanged = false;
     bool speedChanged = false;
-    bool RELEASE_MODE;
+    bool DEV_MODE;
     uint64_t search_timer;
     int speedSetting;
 
@@ -68,9 +67,11 @@ public:
     float getColorValue(string id);
     void initAudio();
     bool vectorsAreEqual(vector<string>v1, vector<string> v2);
-    void publishVideos(vector<string> v1);
+    void publishVideos(vector<string> v1, bool log);
     void publishSpeed();
     void drawControls(int,int);
+
+    void handle_knob_input(ofxOscMessage m);
 
     void setup();
     void update();

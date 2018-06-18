@@ -11,8 +11,8 @@ void ofApp::setup(){
     glPointSize(2.0);
     font.load("verdana.ttf", 12);
     initAudio();
-    RELEASE_MODE = false;
-    if (RELEASE_MODE) imageManager = new ImageManager();
+    DEV_MODE = True;
+    if (!DEV_MODE) imageManager = new ImageManager();
 
     std::cout << "listening for osc messages on port " << CONTROL_RECEIVE_PORT << " and "<<  PLAYING_RECEIVE_PORT<<"\n";
     receiver_python_controller.setup( PYTHON_CONTROL_RECEIVE_PORT );
@@ -31,21 +31,19 @@ void ofApp::setup(){
     pointCloudTree = new PointCloudTreeSearch(&databaseLoader);
     pointCloudTree->initPoints();
 
-    activeIndexes = new bool[24];
-    inactiveCounter = new int[24];
-    desiredFeatureValues = new float[24];
-    speedSetting =0;
-    activeIndex = -1;
-    activityTimer =0;
-    for (int i=0; i<24; i++) {
-        featureValues.push_back(0.0);
-        lastFeatureValues.push_back(0.0);
+    int num_features = databaseLoader.getFeatures()[0][0].size();
+    //Initialize weight to zero
+    featureValues.resize(num_features);
+    lastFeatureValues.resize(num_features);
+    featureWeights = vector<float>(num_features, 0.);
+    inactiveCounter.resize(num_features);
+    desiredFeatureValues.resize(num_features);
 
-        desiredFeatureValues[i]=0.0;
-        activeIndexes[i]=false;
-        inactiveCounter[i]=0;
-    }
-    activeIndexes[0]= True;
+    speedSetting =0;
+    activityTimer =0;
+
+    //Make loudness the only active feature
+    featureWeights[0]= 1.;
 
     windowResized(ofGetWidth(),ofGetHeight());
     ofBackground(0);
@@ -62,25 +60,21 @@ void ofApp::initAudio(){
 //--------------------------------------------------------------
 void ofApp::update(){
     getOscMessage();
-    if (RELEASE_MODE) imageManager->update();
-    pointCloudTree->updateSearchSpace(desiredFeatureValues, activeIndexes);
+    if (!DEV_MODE) imageManager->update();
+    pointCloudTree->updateSearchSpace(desiredFeatureValues, featureWeights);
 
-    //pointCloudTree->updateActiveCoordinates(desiredFeatureValues, activeIndexes);
-
-//    if (desireChanged){
-//        pointCloudTree->updateActiveCoordinates(desiredFeatureValues, activeIndexes);
-//        desireChanged=false;
-//    }
     uint64_t currentTime = ofGetElapsedTimeMillis();
     if ((currentTime - search_timer)>100)
     {
-        pointCloudTree->getNearestPoints();
+        pointCloudTree->getKNN(desiredFeatureValues, featureWeights);
         search_timer =currentTime;
     }
+
     vector<string> videoNames=  databaseLoader.getVideoNamesFromIndexes(pointCloudTree->getSearchResultIndexes());
     if (!vectorsAreEqual(videoNames, lastVideos) && videoNames.size()>0){
-        publishVideos(videoNames);
+        publishVideos(videoNames, false);
     }
+
     pointCloudTree->update();
     lastVideos = videoNames;
 }
@@ -105,32 +99,51 @@ void ofApp::draw(){
     colourInspector.draw(0,windowHeight/3, windowWidth/3, windowHeight/3 -10);
     pointCloudTree->draw();
 
-    if (RELEASE_MODE) imageManager->draw(2*windowWidth/3, 0, windowWidth/3, 2*windowHeight/3 -10);
+    if (!DEV_MODE) imageManager->draw(2*windowWidth/3, 0, windowWidth/3, 2*windowHeight/3 -10);
 
     //drawColors();
 
     drawControls(windowWidth, windowHeight);
-    bool human_activity = False;
 
+    //Update active features
+    for (int i = 0; i <featureWeights.size(); i++)
+    {
+        if (featureWeights[i] >0.){
+            inactiveCounter[i]+=1;
+        }
 
-    for(int i = 0; i<23; i++){
-        if (activeIndexes[i]==true){
-            human_activity=True;
+        //After 5 seconds of inactivity decrement the weight by 0.1 every 0.5 seconds
+        if (inactiveCounter[i]>300 && featureWeights[i] >0){
+//            if ((inactiveCounter[i] %30) ==0){
+                featureWeights[i] = CLAMP(featureWeights[i] -0.1/30, 0., 1.);
+                desireChanged=True;
+//            }
         }
     }
 
+    //If no activity go to low volume low playback speed
+    float totalWeight = std::accumulate(featureWeights.begin(), featureWeights.end(), 0.);
+
+    if (!input_activity && totalWeight <1.){
+        //Decrement amplitude if it's not already at 0
+        if (desiredFeatureValues[0] != 0.){
+            desiredFeatureValues[0] = CLAMP(desiredFeatureValues[0] - 0.01, 0., 1.);
+        }
+        totalWeight = std::accumulate(featureWeights.begin()+1, featureWeights.end(), 0.);
+        featureWeights[0] = 1-totalWeight;
+        //pointCloudTree->updateSearchSpace(desiredFeatureValues, indexWeights);
+    }
+
+
     if (speedChanged){
         publishSpeed();
-        human_activity=True;
         speedChanged = false;
     }
 
-    //If no activity go to low volume low playback speed
-    if (!human_activity){
-        desiredFeatureValues[0]=0.0;
-        activeIndexes[0]=True;
-        pointCloudTree->updateActiveCoordinates(desiredFeatureValues, activeIndexes);
-    }
+
+    //Reset the input activity flag
+    input_activity= False;
+
 }
 
 template <typename T> int sgn(T val) {
@@ -171,24 +184,13 @@ void ofApp::drawControls(int windowWidth, int windowHeight){
         offset+=rectangleWidth;
 
     }
-    //Draw feature controls
-    for(int i = 0; i<23; i++){
-        if (activeIndexes[i]==true){
-            inactiveCounter[i]+=1;
-        }
-        //5 seconds
-        if (inactiveCounter[i]>600){
-            activeIndexes[i]=false;
-            inactiveCounter[i] = 0;
-            desireChanged=True;
-        }
 
-        if (activeIndexes[i]){
-            ofSetColor(240);
-        }
-        else{
-            ofSetColor(125);
-        }
+    //Draw feature controls
+    for(int i = 0; i<featureValues.size(); i++){
+
+
+        ofSetColor(125 + 120 *featureWeights[i]);
+
 
         offset+=rectangleOffset;
         float value =ofRandom(0.,1.);
@@ -376,7 +378,7 @@ void ofApp::getOscMessage() {
         if ( m.getAddress().compare( string("/PLAYING_VIDEO") ) == 0 )
         {
             string fileName = m.getArgAsString(0);
-            if (RELEASE_MODE) imageManager->loadImages(fileName);
+            if (!DEV_MODE) imageManager->loadImages(fileName);
             lastFeatureValues = featureValues;
             featureValues = databaseLoader.getFeaturesFromName(fileName);
             pointCloudTree->setPlayingIndex(databaseLoader.getVideoIndexFromName(fileName));
@@ -405,12 +407,14 @@ void ofApp::getOscMessage() {
             for (int i =0; i<24;i++){
                 float diff =  m.getArgAsFloat(i);
                 if (abs(diff) >0){
-                    desiredFeatureValues[i] +=diff;
-                    desiredFeatureValues[i] =CLAMP(desiredFeatureValues[i], 0., 1.);
-                    activeIndexes[i]=true;
+                    desiredFeatureValues[i] =CLAMP(desiredFeatureValues[i] +diff, 0., 1.);
                     inactiveCounter[i] = 0;
+                    featureWeights[i]=1.0;
+
                     desireChanged=true;
                     activityTimer = 0;
+
+                    input_activity = True;
                 }
             }
 
@@ -446,7 +450,6 @@ void ofApp::getOscMessage() {
                 featureValues[i] = m.getArgAsFloat(i);
             }
             string fileName = m.getArgAsString(24);
-            activeIndex = m.getArgAsInt(25);
 
             //imageManager.loadImages(fileName);
             //featureValues = new float[24];
@@ -484,17 +487,9 @@ void ofApp::getOscMessage() {
 
         if ( m.getAddress().compare( string("/ENCODER/STEP") ) == 0 )
         {
-            ofLogError(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
-            int i = m.getArgAsInt(0)-1;
-            float step = float(m.getArgAsInt(1) -0.5)*2/100.;
-            desiredFeatureValues[i] +=step;
-            desiredFeatureValues[i] =CLAMP(desiredFeatureValues[i], 0., 1.);
-            activeIndexes[i]=true;
-            inactiveCounter[i] = 0;
-            desireChanged=true;
-            activityTimer = 0;
-            //ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Values : " << featureValues[0]<<featureValues[23] ;
+            handle_knob_input(m);
         }
+
         if ( m.getAddress().compare( string("/ENCODER/SWT") ) == 0 )
         {
             ofLogError(ofToString(ofGetElapsedTimef(),3)) << " SWT Message received : " ;
@@ -510,7 +505,21 @@ void ofApp::getOscMessage() {
             ofLogError()<<  m.getAddress();
         }
     }
+}
 
+void ofApp::handle_knob_input(ofxOscMessage m){
+    ofLogError(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
+    int i = m.getArgAsInt(0)-1;
+    float step = float(m.getArgAsInt(1) -0.5)*2/100.;
+
+    desiredFeatureValues[i] =CLAMP(desiredFeatureValues[i]+step, 0., 1.);
+    featureWeights[i]=1.0;
+    inactiveCounter[i] = 0;
+    desireChanged=true;
+    activityTimer = 0;
+    input_activity = True;
+
+    //ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Values : " << featureValues[0]<<featureValues[23] ;
 }
 
 bool ofApp::vectorsAreEqual(vector<string>v1, vector<string> v2){
@@ -523,15 +532,16 @@ bool ofApp::vectorsAreEqual(vector<string>v1, vector<string> v2){
     return True;
 }
 
-void ofApp::publishVideos(vector<string> v1){
+void ofApp::publishVideos(vector<string> v1, bool log){
     ofxOscMessage m;
-    ofLogError(ofToString(ofGetElapsedTimef(),3))<<"Sending batch of length: "<<v1.size() ;
+    if (log) ofLogError(ofToString(ofGetElapsedTimef(),3))<<"Sending batch of length: "<<v1.size() ;
 
     m.setAddress("/VIDEO_NAMES");
     m.addInt32Arg(v1.size());
     for (std::size_t i = 0; i < v1.size(); i++){
         m.addStringArg(v1[i]);
-        ofLogError(ofToString(ofGetElapsedTimef(),3))<<v1[i];
+
+        if (log) ofLogError(ofToString(ofGetElapsedTimef(),3))<<v1[i];
     }
     sender.sendMessage(m);
 }

@@ -73,8 +73,8 @@ void DatabaseLoader::loadHDF5Data(string database_path){
 
 }
 
-vector<vector<float>> DatabaseLoader::getFeatures(){
-    return feature_values;
+const vector<vector<float>>* DatabaseLoader::getFeatures(){
+    return &feature_values;
 }
 
 vector<string>  DatabaseLoader::getFeatureNames(){

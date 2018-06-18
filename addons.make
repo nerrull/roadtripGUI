@@ -1,0 +1,5 @@
+ofxKDTree
+ofxOsc
+ofxThreadedImageLoader
+ofxHDF5
+ofxFft

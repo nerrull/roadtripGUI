@@ -11,7 +11,8 @@ class DatabaseLoader
 public:
     DatabaseLoader();
     void loadHDF5Data(string);
-    vector<vector<float> > getFeatures();
+    const vector<vector<float>>* getFeatures();
+
     vector<string>  getFeatureNames();
     vector<string>  getVideoNames();
     vector<string>  getVideoNamesFromIndexes(vector<int> index);

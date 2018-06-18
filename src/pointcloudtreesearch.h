@@ -13,13 +13,13 @@ public:
     void update();
     void draw();
     void updatePoints();
-    void updateCoordinates();
-    void updateActiveCoordinates(float *desiredValues, bool* activeIndexes);
-    void updateSearchSpace(float * desiredValues, bool* activeIndexes);
+    void updateSearchSpace(vector<float> desiredValues, vector<float> activeIndexes);
 
     void initPoints();
     void setViewPort(int x, int y, int w, int h);
-    void getNearestPoints();
+//    void getNearestPoints();
+    void getKNN(vector<float> search_point, vector<float> search_weights);
+
     vector<int> getSearchResultIndexes();
     void setPlayingIndex(int);
     void drawLines();
@@ -37,11 +37,10 @@ public:
 
     ofMesh playedLine;
     DatabaseLoader* db;
-    std::vector<ofVec3f> search_points;
+    std::vector<ofVec3f> visualization_points;
     std::vector<vector<double>> search_space;
 
 
-    std::vector<ofVec3f> points;
     std::vector<ofVec3f> point_steps;
     vector<ofColor> colors;
 
