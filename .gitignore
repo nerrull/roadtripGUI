@@ -1,7 +1,9 @@
 bin/RoadtripGUI_debug
 bin/RoadtripGUI
 bin/libs
+bin/
 obj/
 .*~
 *.*~
 *.autosave
+*.qbs.user*

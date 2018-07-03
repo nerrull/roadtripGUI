@@ -67,8 +67,8 @@ void PointCloudTreeSearch::getKNN(vector<float> search_point, vector<float> sear
     vector<double> double_point(search_point.begin(),search_point.end());
     vector<double> double_weights(search_weights.begin(),search_weights.end());
 
-
     kdTree.getWeightedKNN(double_point, targetNumberOfPoints, search_indexes, search_dists, double_weights);
+
 }
 
 void PointCloudTreeSearch::update(){
@@ -100,8 +100,8 @@ void PointCloudTreeSearch::draw()
 
     cam.begin(viewMain);
     ofPushMatrix();
-    ofRotateZ(0.179*drawCount);
-    ofRotateX(0.2*drawCount);
+    ofRotateZDeg(0.0573*drawCount);
+    ofRotateXDeg(0.137*drawCount);
 
 
     ofNoFill();
@@ -114,9 +114,9 @@ void PointCloudTreeSearch::draw()
     ofFill();
     ofSetColor(255, 255, 0, 80);
 
-    for (std::size_t i = 0; i < search_indexes.size(); ++i)
+    for (std::size_t i = 0; i < draw_indexes.size(); ++i)
     {
-        ofDrawSphere(visualization_points[search_indexes[i]], .5);
+        ofDrawSphere(visualization_points[draw_indexes[i]], .5);
     }
 
 
@@ -177,6 +177,7 @@ void PointCloudTreeSearch::updateSearchSpace(const vector<float> search_point, c
     float epsilon = 0.0001;
 
     float total_weight = std::accumulate(index_weights.begin(), index_weights.end(), 0.);
+//    cout<<total_weight<<endl;
     int active_features = 0;
     for (auto w : index_weights){
         if (w > 0.) active_features ++;
@@ -197,7 +198,7 @@ void PointCloudTreeSearch::updateSearchSpace(const vector<float> search_point, c
             float diff = search_point[featureIndex]-db->feature_values[i][featureIndex];
             float dist = abs(diff);
 
-            radius += (1. -dist )*50/total_weight;
+            radius += (1. -dist )*index_weights[featureIndex]*50/total_weight;
 
             if (active_features <2) {
                 //ofSeedRandom(featureIndex* i);
@@ -221,12 +222,24 @@ void PointCloudTreeSearch::updateSearchSpace(const vector<float> search_point, c
 }
 
 vector<int> PointCloudTreeSearch::getSearchResultIndexes(){
-    vector<int> indexes;
-
+    draw_indexes.clear();
+    int n_v =0;
     for (std::size_t i = 0; i < search_indexes.size(); ++i)
     {
-        indexes.push_back(search_indexes[i]);
+        float v = search_dists[i];
+        draw_indexes.push_back(search_indexes[i]);
+        n_v++;
+        if (v > threshold_distance){
+            break;
+        }
     }
-    return indexes;
+
+    if (draw_indexes.size() <minVideos){
+        for (;n_v < minVideos; n_v++){
+            draw_indexes.push_back(search_indexes[n_v]);
+        }
+    }
+
+    return draw_indexes;
 }
 

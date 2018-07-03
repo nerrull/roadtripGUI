@@ -6,7 +6,7 @@ DatabaseLoader::DatabaseLoader()
 }
 
 void DatabaseLoader::loadHDF5Data(string database_path){
-    ofSetLogLevel(OF_LOG_VERBOSE);
+//    ofSetLogLevel(OF_LOG_VERBOSE);
     hdf5File.open(database_path, true);
     cout << "File '" << database_path << "' has " << hdf5File.getNumGroups() << " groups and " << hdf5File.getNumDataSets() << " datasets" << endl;
     for (int i = 0; i < hdf5File.getNumGroups(); ++i) {

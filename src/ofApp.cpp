@@ -1,31 +1,27 @@
-#include "ofApp.h"
+#include "ofApp.h"5
+
 
 //--------------------------------------------------------------
 void ofApp::setup(){
     ofGetWindowPtr()->setVerticalSync(true);
-    //ofSetVerticalSync(true);
-    ofSetFrameRate(60);
+    ofSetVerticalSync(true);
     ofSetDrawBitmapMode(OF_BITMAPMODE_MODEL);
     ofEnableAlphaBlending();
     ofEnableDepthTest();
     glPointSize(2.0);
     font.load("verdana.ttf", 12);
     initAudio();
-    DEV_MODE = True;
+    initNames();
+    DEV_MODE = false;
+//    ofSetLogLevel(OF_LOG_ERROR);
+    ofSetLogLevel(OF_LOG_NOTICE);
+
+
     if (!DEV_MODE) imageManager = new ImageManager();
-
-    std::cout << "listening for osc messages on port " << CONTROL_RECEIVE_PORT << " and "<<  PLAYING_RECEIVE_PORT<<"\n";
-    receiver_python_controller.setup( PYTHON_CONTROL_RECEIVE_PORT );
-
-    receiver_controller.setup( CONTROL_RECEIVE_PORT );
-    receiver_playing.setup( PLAYING_RECEIVE_PORT );
-
-    std::cout << "Sending on " << SEND_PORT << "\n";
-    sender.setup("localhost",SEND_PORT);
-
+    num_knobs =23;
     search_timer =ofGetElapsedTimeMillis();
 
-    string db_path = "/media/rice1902/OuterSpace2/dataStore/database.h5";
+    string db_path = "/home/nuc/Documents/dataStore/database.h5";
     databaseLoader.loadHDF5Data(db_path);
 
     pointCloudTree = new PointCloudTreeSearch(&databaseLoader);
@@ -35,6 +31,7 @@ void ofApp::setup(){
     //Initialize weight to zero
     featureValues.resize(num_features);
     lastFeatureValues.resize(num_features);
+    lastFeatureWeights.resize(num_features);
     featureWeights = vector<float>(num_features, 0.);
     inactiveCounter.resize(num_features);
     desiredFeatureValues.resize(num_features);
@@ -49,70 +46,89 @@ void ofApp::setup(){
     windowResized(ofGetWidth(),ofGetHeight());
     ofBackground(0);
 
+    for(int i =0; i < num_features;i++){
+        coms.sendLightControl(i+2, 0);
+    }
+    coms.sendLightControl(2,4095);
+
+
+}
+
+void ofApp::initNames(){
+    feature_names_en.push_back("Loudness");
+    feature_names_en.push_back("Spectral Centroid");
+    feature_names_en.push_back("Percussiveness");
+    feature_names_en.push_back("Pitched");
+    feature_names_en.push_back("Harmonicity");
+    feature_names_en.push_back("Vehicle speed");
+    feature_names_en.push_back("Instability");
+    feature_names_en.push_back("Engine temperature");
+    feature_names_en.push_back("Engine RPM");
+    feature_names_en.push_back("Intake temperature");
+    feature_names_en.push_back("Roll");
+    feature_names_en.push_back("Hue");
+    feature_names_en.push_back("Lightness");
+    feature_names_en.push_back("Uncertainty");
+    feature_names_en.push_back("Building");
+    feature_names_en.push_back("Pavement");
+    feature_names_en.push_back("Road");
+    feature_names_en.push_back("Sky");
+    feature_names_en.push_back("Vegetation");
+    feature_names_en.push_back("Vehicle");
+    feature_names_en.push_back("Signage");
+    feature_names_en.push_back("Fence Pole");
 }
 
 void ofApp::initAudio(){
     audioToggle = true;
     soundStream.printDeviceList();
-    soundStream.setDeviceID(6); //Is computer-specific
+    soundStream.setDeviceID(7); //Is computer-specific
     soundStream.setup(this, 0, 2, 44100, IN_AUDIO_BUFFER_LENGTH, 4);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    getOscMessage();
+    updateOSC();
     if (!DEV_MODE) imageManager->update();
-    pointCloudTree->updateSearchSpace(desiredFeatureValues, featureWeights);
+    pointCloudTree->update();
 
     uint64_t currentTime = ofGetElapsedTimeMillis();
     if ((currentTime - search_timer)>100)
     {
+        pointCloudTree->updateSearchSpace(desiredFeatureValues, featureWeights);
         pointCloudTree->getKNN(desiredFeatureValues, featureWeights);
         search_timer =currentTime;
-    }
+        video_indexes = pointCloudTree->getSearchResultIndexes();
 
-    vector<string> videoNames=  databaseLoader.getVideoNamesFromIndexes(pointCloudTree->getSearchResultIndexes());
+        std::ostringstream oss;
+         if (!video_indexes.empty())
+         {
+           // Convert all but the last element to avoid a trailing ","
+           std::copy(video_indexes.begin(), video_indexes.end()-1,
+               std::ostream_iterator<int>(oss, ","));
 
-    if (input_activity){
-        if (current_playing_video != videoNames[0]){
-            publishVideoNow( videoNames[0], True);
-            current_playing_video = videoNames[0];
+           // Now add the last element with no delimiter
+           oss << video_indexes.back();
+         }
+
+         //std::cout << oss.str() << std::endl;
+         vector<string> videoNames = databaseLoader.getVideoNamesFromIndexes(pointCloudTree->getSearchResultIndexes());
+        if (input_activity){
+            if (current_playing_video != videoNames[0]){
+                coms.publishVideoNow( videoNames[0], true);
+                current_playing_video = videoNames[0];
+                lastVideos.clear();
+                lastVideos.push_back(videoNames[0]);
+            }
+            input_activity= false;
+        }
+
+        else if (!vectorsAreEqual(videoNames, lastVideos) && videoNames.size()>0){
+            coms.publishVideos(videoNames, true);
+            lastVideos = videoNames;
         }
     }
 
-    else if (!vectorsAreEqual(videoNames, lastVideos) && videoNames.size()>0){
-        publishVideos(videoNames, True);
-    }
-
-    pointCloudTree->update();
-    lastVideos = videoNames;
-}
-
-//--------------------------------------------------------------
-void ofApp::draw(){
-
-
-    ofBackground(0);
-    ofSetColor(255);
-
-    std::stringstream strm;
-    strm << "fps: " << ofGetFrameRate();
-    ofDrawBitmapString(strm.str(),20, 20);
-
-    int windowWidth =ofGetWidth();
-    int windowHeight=ofGetHeight();
-
-    waveform.draw(0, 0, windowWidth/3, windowHeight/3 );
-    waveform.drawSpectrum(0, windowHeight/3 , windowWidth/3, windowHeight/3 -10 );
-
-    colourInspector.draw(0,windowHeight/3, windowWidth/3, windowHeight/3 -10);
-    pointCloudTree->draw();
-
-    if (!DEV_MODE) imageManager->draw(2*windowWidth/3, 0, windowWidth/3, 2*windowHeight/3 -10);
-
-    //drawColors();
-
-    drawControls(windowWidth, windowHeight);
 
     //Update active features
     for (int i = 0; i <featureWeights.size(); i++)
@@ -125,9 +141,14 @@ void ofApp::draw(){
         if (inactiveCounter[i]>300 && featureWeights[i] >0){
 //            if ((inactiveCounter[i] %30) ==0){
                 featureWeights[i] = CLAMP(featureWeights[i] -0.1/30, 0., 1.);
-                desireChanged=True;
+                desireChanged=true;
 //            }
         }
+
+        else if (inactiveCounter[i]>300 == featureWeights[i] ==0.){
+            continue;
+        }
+
     }
 
     //If no activity go to low volume low playback speed
@@ -140,18 +161,63 @@ void ofApp::draw(){
         }
         totalWeight = std::accumulate(featureWeights.begin()+1, featureWeights.end(), 0.);
         featureWeights[0] = 1-totalWeight;
+
+        //Decrement speed while inactive
+        if (speedSetting >0 && inactiveCounter[0] > 300 &&inactiveCounter[0] %60 ==0){
+            setSpeed(speedSetting -1);
+        }
         //pointCloudTree->updateSearchSpace(desiredFeatureValues, indexWeights);
     }
 
-
+    //Do coms stuff
     if (speedChanged){
-        publishSpeed();
+        coms.publishSpeed(speedSetting);
         speedChanged = false;
     }
 
+    for (int i = 0; i <featureWeights.size(); i++)
+    {
+        if (lastFeatureWeights[i]!=featureWeights[i]){
+            coms.sendLightControl(i+2, int(featureWeights[i]*4096));
+        }
+    }
 
     //Reset the input activity flag
-    input_activity= False;
+    lastFeatureValues = featureValues;
+    lastFeatureWeights = featureWeights;
+
+
+
+}
+
+//--------------------------------------------------------------
+void ofApp::draw(){
+
+
+    ofBackground(0);
+    ofSetColor(255);
+    if (DEV_MODE){
+        std::stringstream strm;
+        strm << "fps: " << ofGetFrameRate();
+        ofDrawBitmapString(strm.str(),20, 20);
+    }
+
+
+    int windowWidth =ofGetWidth();
+    int windowHeight=ofGetHeight();
+
+    waveform.draw(0, 0, windowWidth/4, windowHeight/3 );
+    waveform.drawSpectrum(0, windowHeight/3 , windowWidth/4, windowHeight/3 -10 );
+
+    colourInspector.draw(0,windowHeight/3, windowWidth/4, windowHeight/3 -10);
+    pointCloudTree->draw();
+
+    if (!DEV_MODE) imageManager->draw(3*windowWidth/4, 0, windowWidth/4, 2*windowHeight/3 -10);
+
+    //drawColors();
+
+    drawControls(windowWidth, windowHeight);
+
 
 }
 
@@ -168,9 +234,7 @@ void ofApp::drawControls(int windowWidth, int windowHeight){
         if (speedChanged){
              ofSetColor(240);
         }
-        else{
-            ofSetColor(125);
-        }
+
         offset+=rectangleOffset;
         float value =ofRandom(0.,1.);
         int height = max(minHeight, speedSetting *rectangleMaxHeight/8);
@@ -182,11 +246,14 @@ void ofApp::drawControls(int windowWidth, int windowHeight){
         ofDrawRectangle(offset+3,ofGetHeight()+3-height, rectangleWidth-6, height-6);
 
         ofPushMatrix();
-        ofSetColor(255);
+        ofSetColor(80);
+//        ofTranslate(offset, windowHeight-20,1);
         ofTranslate(offset, windowHeight-20,1);
-        ofRotateZ(-90.);
+
+        ofRotateZDeg(-90.);
         string name = "BPM";
         float fontWidth = font.stringHeight(name);
+        float fontHeight = font.stringWidth(name);
         font.drawString(name,0,rectangleWidth/2 +fontWidth/2);
         ofPopMatrix();
 
@@ -198,9 +265,7 @@ void ofApp::drawControls(int windowWidth, int windowHeight){
     for(int i = 0; i<featureValues.size(); i++){
 
 
-        ofSetColor(125 + 120 *featureWeights[i]);
-
-
+        ofSetColor(80);
         offset+=rectangleOffset;
         float value =ofRandom(0.,1.);
         float diff = featureValues[i] - lastFeatureValues[i];
@@ -220,12 +285,12 @@ void ofApp::drawControls(int windowWidth, int windowHeight){
         ofPushMatrix();
         ofSetColor(255);
         ofTranslate(offset, windowHeight-20,1);
-        ofRotateZ(-90.);
-        string name = databaseLoader.feature_names[i];
+        ofRotateZDeg(-90.);
+        string name = feature_names_en[i];
+
         float fontWidth = font.stringHeight(name);
         font.drawString(name,0,rectangleWidth/2 +fontWidth/2);
         ofPopMatrix();
-
 
         offset+=rectangleWidth;
     }
@@ -353,15 +418,15 @@ void ofApp::mouseExited(int x, int y){
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h){
 
-    rectangleWidth = ofGetWidth()/24-20;
-    int emptySpace = ofGetWidth() -24*rectangleWidth;
-    rectangleTop = ofGetHeight()*2/3;
-    rectangleOffset = emptySpace/25;
-    spaceRemainder = emptySpace - 25*rectangleOffset;
+    rectangleWidth = ofGetWidth()/num_knobs-20;
+    int emptySpace = ofGetWidth() -num_knobs*rectangleWidth;
+    rectangleTop = ofGetHeight()*2/3 ;
+    rectangleOffset = emptySpace/num_knobs+1;
+    spaceRemainder = emptySpace - (num_knobs+1)*rectangleOffset;
     minHeight = 7;
-    rectangleMaxHeight = ofGetHeight()*1/3;
+    rectangleMaxHeight = ofGetHeight() -rectangleTop;
 
-    pointCloudTree->setViewPort(ofGetWidth()/3, 0, ofGetWidth()/3, 2*  ofGetHeight()/3);
+    pointCloudTree->setViewPort(ofGetWidth()/4, 0, ofGetWidth()/2, 2*  ofGetHeight()/3);
 
     ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Offset "<<rectangleOffset;
     ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Remaining space "<< spaceRemainder;
@@ -377,202 +442,133 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 
 }
 
-void ofApp::getOscMessage() {
-    // hide old messages
+void ofApp::updatePlayingVideo(string video){
+    current_playing_video = video;
+    if (!DEV_MODE) imageManager->loadImages(current_playing_video);
+    lastFeatureValues = featureValues;
+    featureValues = databaseLoader.getFeaturesFromName(current_playing_video);
+    pointCloudTree->setPlayingIndex(databaseLoader.getVideoIndexFromName(current_playing_video));
+}
 
-    while( receiver_playing.hasWaitingMessages() )
+void ofApp::incrementSpeed(int step){
+    speedSetting=  CLAMP(speedSetting+step, 0, 8);
+    speedChanged =true;
+}
+
+void ofApp::setSpeed(int value){
+    speedSetting=  CLAMP(value, 0, 8);
+    speedChanged =true;
+}
+
+
+void ofApp::incrementFeatureTarget(int index, float step){
+    desiredFeatureValues[index] =CLAMP(desiredFeatureValues[index]+step, 0., 1.);
+    featureWeights[index]=1.0;
+    inactiveCounter[index] = 0;
+    desireChanged=true;
+    activityTimer = 0;
+    input_activity = true;
+}
+
+void ofApp::toggleFeatureTarget(int index){
+    float v = desiredFeatureValues[index];
+    int target_value = 0.;
+    if (v<.5) target_value = 1.;
+    desiredFeatureValues[index] =CLAMP(target_value, 0., 1.);
+    featureWeights[index]=1.0;
+    inactiveCounter[index] = 0;
+    desireChanged=true;
+    activityTimer = 0;
+    input_activity = true;
+}
+
+void ofApp::updateOSC() {
+    // hide old messages
+    while( coms.receiver_playing.hasWaitingMessages() )
     {
         ofxOscMessage m;
-        receiver_playing.getNextMessage( &m );
+        coms.receiver_playing.getNextMessage( m );
         if ( m.getAddress().compare( string("/PLAYING_VIDEO") ) == 0 )
         {
-            current_playing_video = m.getArgAsString(0);
-
-            if (!DEV_MODE) imageManager->loadImages(current_playing_video);
-            lastFeatureValues = featureValues;
-            featureValues = databaseLoader.getFeaturesFromName(current_playing_video);
-            pointCloudTree->setPlayingIndex(databaseLoader.getVideoIndexFromName(current_playing_video));
-
-
+            updatePlayingVideo(m.getArgAsString(0));
         }
         else
         {
-            ofLogError()<<  m.getAddress();
-
+            ofLogVerbose()<<  m.getAddress();
         }
 
     }
-    // check for waiting messages
-    while( receiver_python_controller.hasWaitingMessages() )
+    //Uncomment this when using controller simulator
+    //handlePythonMessages();
+
+    while( coms.receiver_controller.hasWaitingMessages() )
     {
         // get the next message
         ofxOscMessage m;
-        receiver_python_controller.getNextMessage( &m );
-
-        // check for mouse button message
-        if ( m.getAddress().compare( string("/FEATURE_DIFFS") ) == 0 )
-        {
-            // the single argument is a string
-            //strcpy( next_video, m.getArgAsString( 0 ) );
-            for (int i =0; i<24;i++){
-                float diff =  m.getArgAsFloat(i);
-                if (abs(diff) >0){
-                    desiredFeatureValues[i] =CLAMP(desiredFeatureValues[i] +diff, 0., 1.);
-                    inactiveCounter[i] = 0;
-                    featureWeights[i]=1.0;
-
-                    desireChanged=true;
-                    activityTimer = 0;
-
-                    input_activity = True;
-                }
-            }
-
-            //featureValues = new float[24];
-            //std::memcpy(featureValues, values.getData(), 24*sizeof(float));
-            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "FEATURE_DIFFS Message received : " ;
-
-            //ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Message received : " ;
-            //ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Values : " << featureValues[0]<<featureValues[23] ;
-        }
-
-        if ( m.getAddress().compare( string("/SET_SPEED") ) == 0 )
-        {
-
-            speedSetting=  m.getArgAsInt(0);
-            speedChanged =true;
-
-            //featureValues = new float[24];
-            //std::memcpy(featureValues, values.getData(), 24*sizeof(float));
-            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "FEATURE_DIFFS Message received : " ;
-
-            //ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Message received : " ;
-            //ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Values : " << featureValues[0]<<featureValues[23] ;
-        }
-
-
-
-        else if ( m.getAddress().compare( string("/FEATURE_VALUES") ) == 0 )
-        {
-            // the single argument is a string
-            //strcpy( next_video, m.getArgAsString( 0 ) );
-            for (int i =0; i<24;i++){
-                featureValues[i] = m.getArgAsFloat(i);
-            }
-            string fileName = m.getArgAsString(24);
-
-            //imageManager.loadImages(fileName);
-            //featureValues = new float[24];
-            //std::memcpy(featureValues, values.getData(), 24*sizeof(float));
-            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Message received : " ;
-            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Values : " << featureValues[0]<<featureValues[23] ;
-
-
-        }
-
-        else if ( m.getAddress().compare( string("/FEATURE_NAMES") ) == 0 )
-        {
-            // the single argument is a string
-            //strcpy( next_video, m.getArgAsString( 0 ) );
-            featureNames.clear();
-            for (int i =0; i<24;i++){
-                featureNames.push_back(m.getArgAsString(i));
-            }
-
-            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Feature names : " ;
-            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Ex : " << featureNames[0]<<" to " <<featureNames[23] ;
-        }
-        else
-        {
-            ofLogError()<<  m.getAddress();
-
-        }
-    }
-
-    while( receiver_controller.hasWaitingMessages() )
-    {
-        // get the next message
-        ofxOscMessage m;
-        receiver_controller.getNextMessage( &m );
+        coms.receiver_controller.getNextMessage( m );
 
         if ( m.getAddress().compare( string("/ENCODER/STEP") ) == 0 )
         {
-            handle_knob_input(m);
+            handleKnobInput(m);
         }
 
         if ( m.getAddress().compare( string("/ENCODER/SWT") ) == 0 )
         {
-            ofLogError(ofToString(ofGetElapsedTimef(),3)) << " SWT Message received : " ;
             int idx = m.getArgAsInt(0);
-            int swt = m.getArgAsInt(0);
-
-
-            //ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Values : " << featureValues[0]<<featureValues[23] ;
+            int swt = m.getArgAsInt(1);
+            ofLogVerbose(ofToString(ofGetElapsedTimef(),3)) << " SWT Message received : Index"<< idx << "value"<<swt ;
+            if (swt >0) handleButtonInput(idx);
         }
 
         else
         {
-            ofLogError()<<  m.getAddress();
+            ofLogVerbose()<<  m.getAddress();
         }
     }
 }
 
-void ofApp::handle_knob_input(ofxOscMessage m){
-    ofLogError(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
-    int i = m.getArgAsInt(0)-1;
-    float step = float(m.getArgAsInt(1) -0.5)*2/100.;
+void ofApp::handleKnobInput(ofxOscMessage m){
+//    ofLogDebug(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
+    int i = m.getArgAsInt(0);
 
-    desiredFeatureValues[i] =CLAMP(desiredFeatureValues[i]+step, 0., 1.);
-    featureWeights[i]=1.0;
-    inactiveCounter[i] = 0;
-    desireChanged=true;
-    activityTimer = 0;
-    input_activity = True;
+    if (i ==1){
+        int step =m.getArgAsInt(1);
+        if (step ==0) step = -1;
+        incrementSpeed(step);
+        return;
+    }
 
-    //ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Values : " << featureValues[0]<<featureValues[23] ;
+     i =i-2;
+
+    float step = (float(m.getArgAsInt(1)) -0.5)*2/100.;
+    incrementFeatureTarget(i, step);
 }
+
+
+
+void ofApp::handleButtonInput(int index){
+//    ofLogDebug(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
+
+    if (index ==1){
+        setSpeed(0);
+        return;
+    }
+
+     index =index-2;
+     toggleFeatureTarget(index);
+}
+
 
 bool ofApp::vectorsAreEqual(vector<string>v1, vector<string> v2){
     if (v1.size()!= v2.size()){
-        return False;
+        return false;
     }
     else if (!std::equal(v1.begin(), v1.begin() + v1.size(), v2.begin())){
-       return False;
+       return false;
     }
-    return True;
+    return true;
 }
 
-void ofApp::publishVideos(vector<string> v1, bool log){
-    ofxOscMessage m;
-    if (log) ofLogError(ofToString(ofGetElapsedTimef(),3))<<"Sending batch of length: "<<v1.size() ;
-
-    m.setAddress("/VIDEO_NAMES");
-    m.addInt32Arg(v1.size());
-    for (std::size_t i = 0; i < v1.size(); i++){
-        m.addStringArg(v1[i]);
-
-        if (log) ofLogError(ofToString(ofGetElapsedTimef(),3))<<v1[i];
-    }
-    sender.sendMessage(m);
-    publishSpeed();
-}
-
-void ofApp::publishVideoNow(string v1, bool log){
-    ofxOscMessage m;
-    if (log) ofLogError(ofToString(ofGetElapsedTimef(),3))<<"Sending "<< v1<<"to play now"<<endl ;
-    m.setAddress("/PLAY_NOW");
-    m.addStringArg(v1);
-    sender.sendMessage(m);
-}
-
-void ofApp::publishSpeed(){
-    ofxOscMessage m;
-    ofLogError(ofToString(ofGetElapsedTimef(),3))<<"Sending speed value" ;
-
-    m.setAddress("/SET_SPEED");
-    m.addInt32Arg(speedSetting);
-    sender.sendMessage(m);
-}
 
 void ofApp::audioIn(ofSoundBuffer & buffer){
     if (audioToggle){

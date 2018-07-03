@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.2.1, 2018-06-18T14:14:37. -->
+<!-- Written by QtCreator 4.6.1, 2018-07-03T16:12:53. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
-  <value type="QByteArray">{ce48363b-ce70-42a0-8a59-8d9959bcfaca}</value>
+  <value type="QByteArray">{3b45eb3c-cf09-4668-ab01-ccfbf47947c1}</value>
  </data>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
@@ -59,14 +59,14 @@
  <data>
   <variable>ProjectExplorer.Project.Target.0</variable>
   <valuemap type="QVariantMap">
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Desktop Qt 5.8.0 GCC 64bit</value>
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Desktop Qt 5.8.0 GCC 64bit</value>
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">qt.58.gcc_64_kit</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Desktop</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Desktop</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">{68b4e6bd-ed65-49dd-8734-bd554f48b401}</value>
    <value type="int" key="ProjectExplorer.Target.ActiveBuildConfiguration">1</value>
    <value type="int" key="ProjectExplorer.Target.ActiveDeployConfiguration">0</value>
    <value type="int" key="ProjectExplorer.Target.ActiveRunConfiguration">0</value>
    <valuemap type="QVariantMap" key="ProjectExplorer.Target.BuildConfiguration.0">
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/rice1902/Programs/of_v0.9.8_linux64_release/apps/myApps/build-RoadtripGUI-Desktop_Qt_5_8_0_GCC_64bit-Debug</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/nuc/Documents/of_v0.10.0_linux64gcc6_release/apps/myApps/build-roadtripGUI-Desktop-Debug</value>
     <valuemap type="QVariantMap" key="ProjectExplorer.BuildConfiguration.BuildStepList.0">
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
       <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
@@ -75,14 +75,16 @@
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qbs.BuildStep</value>
       <value type="bool" key="Qbs.CleanInstallRoot">false</value>
       <valuemap type="QVariantMap" key="Qbs.Configuration">
-       <value type="QString" key="qbs.buildVariant">debug</value>
-       <value type="QString" key="qbs.profile">qtc_Desktop__19bfa0b4</value>
+       <value type="QString" key="qbs.defaultBuildVariant">debug</value>
+       <value type="QString" key="qbs.profile">qtc_Desktop_32ddc076</value>
+       <value type="bool" key="qbspm.forceProbes">false</value>
       </valuemap>
       <value type="bool" key="Qbs.DryKeepGoing">false</value>
       <value type="bool" key="Qbs.DryRun">false</value>
       <value type="bool" key="Qbs.Install">true</value>
-      <value type="int" key="Qbs.MaxJobs">4</value>
+      <value type="int" key="Qbs.MaxJobs">8</value>
       <value type="bool" key="Qbs.ShowCommandLines">false</value>
+      <value type="bool" key="Qbs.enableQmlDebuggingKey">false</value>
       <value type="bool" key="Qbs.forceProbesKey">false</value>
      </valuemap>
      <value type="int" key="ProjectExplorer.BuildStepList.StepsCount">1</value>
@@ -108,11 +110,12 @@
     <value type="bool" key="ProjectExplorer.BuildConfiguration.ClearSystemEnvironment">false</value>
     <valuelist type="QVariantList" key="ProjectExplorer.BuildConfiguration.UserEnvironmentChanges"/>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Debug</value>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Debug</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qbs.QbsBuildConfiguration</value>
+    <value type="QString" key="Qbs.configName">qtc_Desktop_Debug</value>
    </valuemap>
    <valuemap type="QVariantMap" key="ProjectExplorer.Target.BuildConfiguration.1">
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/rice1902/Programs/of_v0.9.8_linux64_release/apps/myApps/build-RoadtripGUI-Desktop_Qt_5_8_0_GCC_64bit-Release</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/nuc/Documents/of_v0.10.0_linux64gcc6_release/apps/myApps/build-roadtripGUI-Desktop-Release</value>
     <valuemap type="QVariantMap" key="ProjectExplorer.BuildConfiguration.BuildStepList.0">
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
       <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
@@ -121,14 +124,16 @@
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qbs.BuildStep</value>
       <value type="bool" key="Qbs.CleanInstallRoot">false</value>
       <valuemap type="QVariantMap" key="Qbs.Configuration">
-       <value type="QString" key="qbs.buildVariant">release</value>
-       <value type="QString" key="qbs.profile">qtc_Desktop__19bfa0b4</value>
+       <value type="QString" key="qbs.defaultBuildVariant">release</value>
+       <value type="QString" key="qbs.profile">qtc_Desktop_32ddc076</value>
+       <value type="bool" key="qbspm.forceProbes">false</value>
       </valuemap>
       <value type="bool" key="Qbs.DryKeepGoing">false</value>
       <value type="bool" key="Qbs.DryRun">false</value>
       <value type="bool" key="Qbs.Install">true</value>
-      <value type="int" key="Qbs.MaxJobs">4</value>
+      <value type="int" key="Qbs.MaxJobs">8</value>
       <value type="bool" key="Qbs.ShowCommandLines">false</value>
+      <value type="bool" key="Qbs.enableQmlDebuggingKey">false</value>
       <value type="bool" key="Qbs.forceProbesKey">false</value>
      </valuemap>
      <value type="int" key="ProjectExplorer.BuildStepList.StepsCount">1</value>
@@ -154,8 +159,9 @@
     <value type="bool" key="ProjectExplorer.BuildConfiguration.ClearSystemEnvironment">false</value>
     <valuelist type="QVariantList" key="ProjectExplorer.BuildConfiguration.UserEnvironmentChanges"/>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Release</value>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Release</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qbs.QbsBuildConfiguration</value>
+    <value type="QString" key="Qbs.configName">qtc_Desktop_Release</value>
    </valuemap>
    <value type="int" key="ProjectExplorer.Target.BuildConfigurationCount">2</value>
    <valuemap type="QVariantMap" key="ProjectExplorer.Target.DeployConfiguration.0">
@@ -166,8 +172,8 @@
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">ProjectExplorer.BuildSteps.Deploy</value>
     </valuemap>
     <value type="int" key="ProjectExplorer.BuildConfiguration.BuildStepListCount">1</value>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Deploy locally</value>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Qbs Install</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Qbs Install</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qbs.Deploy</value>
    </valuemap>
    <value type="int" key="ProjectExplorer.Target.DeployConfigurationCount">1</value>
@@ -214,12 +220,13 @@
     </valuelist>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">RoadtripGUI</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">roadtripGUI</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qbs.RunConfiguration:RoadtripGUI.qtc_Desktop__19bfa0b4---Qbs.RC.NameSeparator---RoadtripGUI</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qbs.RunConfiguration:roadtripGUI.---Qbs.RC.NameSeparator---roadtripGUI</value>
     <value type="QString" key="Qbs.RunConfiguration.CommandLineArguments"></value>
+    <value type="bool" key="Qbs.RunConfiguration.UsingLibraryPaths">true</value>
     <value type="QString" key="Qbs.RunConfiguration.WorkingDirectory"></value>
-    <value type="QString" key="Qbs.RunConfiguration.WorkingDirectory.default"></value>
+    <value type="QString" key="Qbs.RunConfiguration.WorkingDirectory.default">/home/nuc/Documents/of_v0.10.0_linux64gcc6_release/apps/myApps/roadtripGUI/bin</value>
     <value type="uint" key="RunConfiguration.QmlDebugServerPort">3768</value>
     <value type="bool" key="RunConfiguration.UseCppDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>

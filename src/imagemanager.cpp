@@ -19,7 +19,7 @@ void ImageManager::loadImages(string fileName){
 
     string frameName= fileName + ".png";
     string segnetName = fileName + "_segnet.png";
-    string uncertaintyName = fileName + "_heatmap.png";
+    string uncertaintyName = fileName + "_uncertainty.png";
 
     firstFrameImage.setFromPixels(*imgLoader1.getImage(frameName));
     segnetImage.setFromPixels(*imgLoader2.getImage(segnetName));
@@ -32,21 +32,21 @@ void ImageManager::draw(int cornerX, int cornerY, int width, int height){
    ofPushMatrix();
    ofSetColor(255);
    ofTranslate(cornerX,cornerY);
-   ofDrawBitmapString(currentFileName, 15, 15);
+   //ofDrawBitmapString(currentFileName, 15, 15);
 
    if (!loaded){
        ofPopMatrix();
        return;
    }
 
-   if (firstFrameImage.isUsingTexture()){
-       firstFrameImage.draw(0, 0, width/2, height/2);
-   }
+//   if (firstFrameImage.isUsingTexture()){
+//       firstFrameImage.draw(0, 0, width/2, height/2);
+//   }
    if (segnetImage.isUsingTexture()){
-        segnetImage.draw(0,height/2, width/2, height/2);
+        segnetImage.draw(0,0, width, height/2);
    }
    if (heatmapImage.isUsingTexture()){
-       heatmapImage.draw(width/2,height/2, width/2, height/2);
+       heatmapImage.draw(0,height/2, width, height/2);
    }
    ofPopMatrix();
 }

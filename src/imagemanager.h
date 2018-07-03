@@ -8,8 +8,8 @@ class ImageManager
 {
 public:
     ImageManager();
-    string IMAGE_DATA_BASE_PATH = "/media/rice1902/OuterSpace1/dataStore/IMAGE/frames_480/";
-    string SEGNET_DATA_BASE_PATH = "/media/rice1902/OuterSpace1/dataStore/IMAGE/segnet/";
+    string IMAGE_DATA_BASE_PATH = "/home/nuc/Documents/dataStore/IMAGE/frames_480/";
+    string SEGNET_DATA_BASE_PATH = "/home/nuc/Documents/dataStore/IMAGE/segnet/";
     string currentFileName;
     ImageLoader imgLoader1;
     ImageLoader imgLoader2;

@@ -5,7 +5,7 @@ AudioWaveform::AudioWaveform()
     spectrogramOffset=0;
     soundBuffer.reserve(INTERNAL_BUFFER_LENGTH);
     drawBuffer.reserve(INTERNAL_BUFFER_LENGTH);
-    toggle = False;
+    toggle = false;
     for (int i =0; i<INTERNAL_BUFFER_LENGTH; i++){
         soundBuffer.push_back(0.0f);
         drawBuffer.push_back(0.f);

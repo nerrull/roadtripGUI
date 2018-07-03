@@ -29,7 +29,9 @@ public:
     int num_points;
     int drawCount =0;
     int playingIndex =0;
-    int targetNumberOfPoints = 15;
+    int targetNumberOfPoints = 50;
+    int minVideos = 5;
+    float threshold_distance = 0.01;
 
     deque<ofVec3f> playedPoints;
     ofPolyline line;
@@ -47,6 +49,8 @@ public:
     ofxKDTree kdTree;
     vector<size_t> search_indexes;
     vector<double> search_dists;
+    vector<int> draw_indexes;
+
 
     ofEasyCam cam;
     ofRectangle viewMain;

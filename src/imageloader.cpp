@@ -14,15 +14,12 @@ void ImageLoader::setPath(string path){
 void ImageLoader::loadAllImages(){
     vector<ofFile> files =  dir.getFiles();
     for (int i =0 ; i<files.size(); i++){
-
         ofPixels p;
         ofLoadImage(p,dir.getPath(i));
         imagePixels.push_back(p);
         string fullname = dir.getName(i);
-//        size_t lastindex = fullname.find_last_of(".");
-//        string rawname = fullname.substr(0, lastindex);
         imageNames.push_back(fullname);
-
+        ofLogNotice()<<"Loading image "<<fullname<<endl;
     }
 }
 
