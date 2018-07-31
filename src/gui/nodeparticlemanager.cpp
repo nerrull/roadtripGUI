@@ -11,7 +11,7 @@ NodeParticleManager::NodeParticleManager()
     nodeForce=2500;
     linearForce = 0;
     repulsionCoeff= 0.1;
-    cohesionCoeff = 0;
+    cohesionCoeff = 0.;
     frictionCoeff =0.01;
     numNodes = 16;
     draw_nodes =false;
@@ -107,7 +107,7 @@ void NodeParticleManager::draw(){
             ofSetColor(0, 255,255);
 
             //ofSetColor(ofColor::green, 150);
-            ofDrawSphere(ofVec3f(simple_nodes[i].pos.x, simple_nodes[i].pos.y, simple_nodes[i].pos.z), simple_aoe);
+//            ofDrawSphere(ofVec3f(simple_nodes[i].pos.x, simple_nodes[i].pos.y, simple_nodes[i].pos.z), simple_aoe);
         }
         ofSetColor(ofColor::red);
         ofDrawSphere(activeNode,10);

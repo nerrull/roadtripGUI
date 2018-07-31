@@ -73,6 +73,20 @@ void DatabaseLoader::loadHDF5Data(string database_path){
         dimension_reduction.push_back(p);
     }
 
+    dr_ptr= hdf5File.loadDataSet("dimension_reduction_2D");
+    num_points = dr_ptr->getDimensionSize(0);
+    points_dim = dr_ptr->getDimensionSize(1);
+    dimValues= new float[num_points*points_dim];
+    dr_ptr->read(dimValues);
+    for( int row =0; row<num_points; row++){
+        ofVec3f p;
+        p.x = dimValues[row*points_dim] -0.5;
+        p.y = dimValues[row*points_dim+1]-0.5;
+        p.z = 0.;
+
+        dimension_reduction_2D.push_back(p);
+    }
+
     feature_names_ptr= hdf5File.loadDataSet("feature_names");
     size_t  name_size = feature_names_ptr->getDataSize();
     int num_names = feature_names_ptr->getDimensionSize(0);

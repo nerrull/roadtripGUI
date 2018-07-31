@@ -34,8 +34,9 @@ void PointCloudRenderer::setActiveNodes(vector<int> nodeIndexes){
 }
 
 
-void PointCloudRenderer::setPlayingNode(int playingIndex){
-
+void PointCloudRenderer::setPlayingNode(int index){
+    playingIndex = index;
+    playedPoints.push_back(visualization_points[index]);
 }
 
 
@@ -49,8 +50,8 @@ void PointCloudRenderer::initPoints(vector<ofVec3f> points, vector<ofColor>c){
     int index=  0;
     for (auto p :points)
     {
-        ofVec3f point = p*1000;
-        mesh.addVertex(p);
+        ofVec3f point = p*100;
+        mesh.addVertex(point);
         mesh.addColor(colors[index]);
         point_steps.push_back(ofVec3f(0.,0.,0.));
         visualization_points.push_back(point);
@@ -96,7 +97,7 @@ void PointCloudRenderer::initPoints(int nPoints, vector<ofColor>c){
 
 
 void PointCloudRenderer::update(){
-    updatePoints();
+//    updatePoints();
 
     if (playedPoints.size() >10){
         playedPoints.pop_front();
@@ -104,18 +105,18 @@ void PointCloudRenderer::update(){
     nodeParticles.update();
 
 
-//    if (playedPoints.size() >1){
-//        line.clear();
-//        playedLine.clear();
-//        ofVec3f p = playedPoints[0];
-//        line.addVertex(p);
+    if (playedPoints.size() >1){
+        line.clear();
+        playedLine.clear();
+        ofVec3f p = playedPoints[0];
+        line.addVertex(p);
 
-//        for (int pointIndex=1; pointIndex < playedPoints.size(); pointIndex ++){
-//            p = playedPoints[pointIndex];
-//            line.curveTo(p);
-//        }
+        for (int pointIndex=1; pointIndex < playedPoints.size(); pointIndex ++){
+            p = playedPoints[pointIndex];
+            line.curveTo(p);
+        }
 
-//    }
+    }
 }
 
 
@@ -146,33 +147,38 @@ void PointCloudRenderer::draw()
 
     cam.begin(viewMain);
     ofPushMatrix();
-//    ofRotateZDeg(0.0573*drawCount);
-//    ofRotateXDeg(0.137*drawCount);
+    ofRotateZDeg(0.0573*drawCount);
+    ofRotateXDeg(0.137*drawCount);
 
 
     ofNoFill();
-    ofSetColor(255);
     drawCount++;
 
     // Draw all of the points.
+    ofSetColor(255,70);
+//    glPointSize(2);
+    mesh.draw();
+
+    ofSetColor(255);
+//    glPointSize(1);
     mesh.draw();
 
     ofFill();
     ofSetColor(255, 255, 0, 80);
 
-    for (std::size_t i = 0; i < draw_indexes.size(); ++i)
-    {
-        ofDrawSphere(visualization_points[draw_indexes[i]], .5);
-    }
+//    for (std::size_t i = 0; i < draw_indexes.size(); ++i)
+//    {
+//        ofDrawSphere(visualization_points[draw_indexes[i]], .5);
+//    }
 
 
-    ofSetColor(255, 0, 0);
-    ofDrawIcoSphere(visualization_points[playingIndex], 1.);
+//    ofSetColor(255, 0, 0);
+//    ofDrawIcoSphere(visualization_points[playingIndex], 1.);
     ofSetColor(255);
-    connectionMesh.draw();
+    line.draw();
+//    connectionMesh.draw();
     ofPopMatrix();
-
-    nodeParticles.draw();
+    //    nodeParticles.draw();
     cam.end();
 
 }

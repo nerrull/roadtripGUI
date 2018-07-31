@@ -10,7 +10,7 @@
 #include "util/featureKNN.h"
 #include "util/databaseloader.h"
 #include "util/communication.h"
-#include "uielements.h"
+#include "gui/elements/uielements.h"
 
 #define NUM_MSG_STRINGS 20
 
@@ -44,6 +44,8 @@ public:
     float getColorValue(string id);
     void handleKnobInput(ofxOscMessage m);
     void handleButtonInput(int index);
+    void updateActiveFeature(int index);
+
     bool vectorsAreEqual(vector<string>v1, vector<string> v2);
     void toggleLanguage();
 
@@ -95,7 +97,10 @@ public:
 
     int activityTimer;
     int playingFileDuration =1000;
-
+    int featureTimeout;
+    int lastActiveFeatureIndex;
+    float featureDecayRate;
+    vector<bool> featureActive;
     vector<float> featureWeights;
     vector<float> lastFeatureWeights;
 

@@ -26,18 +26,29 @@ Project{
             "src/util/featureKNN.h",
             "src/util/imageloader.cpp",
             "src/util/imageloader.h",
+            "src/util/searchspace.h",
             "src/gui/nodeparticlemanager.cpp",
             "src/gui/nodeparticlemanager.h",
             "src/gui/imagemanager.cpp",
             "src/gui/imagemanager.h",
             "src/gui/segnetcolourinspector.cpp",
             "src/gui/segnetcolourinspector.h",
+            "src/gui/elements/colorcircle.h",
+            "src/gui/elements/colorcircle.cpp",
+            "src/gui/elements/circlefeatureguielement.h",
+            "src/gui/elements/circlefeatureguielement.cpp",
+            "src/gui/elements/fillcircle.h",
+            "src/gui/elements/searchradiuselement.h",
+            "src/gui/elements/uielements.h",
+
+
+
+
             "src/main.cpp",
             "src/ofApp.cpp",
             "src/ofApp.h",
             "bin/data/settings.json",
             "bin/data/particle_node_compute.glsl",
-            "src/util/searchspace.h",
         ]
 
         of.addons: [
@@ -48,8 +59,6 @@ Project{
             'ofxKDTree',
             'ofxJsonSettings',
             'ofxJSON',
-            'ofxUiElements',
-
             'ofxWorldMap'
 
         ]

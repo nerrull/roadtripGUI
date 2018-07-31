@@ -20,6 +20,10 @@ void ofApp::setup(){
     Settings::get().load("settings.json");
     string db_path = Settings::getString("db_path");
     DEV_MODE = Settings::getBool("dev_mode");
+    featureTimeout = Settings::getInt("feature_timeout");
+    featureDecayRate = Settings::getFloat("feature_decay_sec")/60.;
+    lastActiveFeatureIndex =0;
+
 
     if (DEV_MODE) ofSetFrameRate(60);
 
@@ -35,7 +39,7 @@ void ofApp::setup(){
     search_timer =ofGetElapsedTimeMillis();
 
     databaseLoader.loadHDF5Data(db_path);
-    worldMap.setVideoPoints(databaseLoader.getCoordinates());
+//    worldMap.setVideoPoints(databaseLoader.getCoordinates());
     fKNN.init(&databaseLoader);
 //    pointCloudRender.initPoints(fKNN.num_points, databaseLoader.colors);
     pointCloudRender.initPoints(databaseLoader.dimension_reduction, databaseLoader.colors);
@@ -48,8 +52,9 @@ void ofApp::setup(){
     lastFeatureValues.resize(num_features);
     lastFeatureWeights.resize(num_features);
     featureWeights = vector<float>(num_features, 0.);
-    inactiveCounter.resize(num_features);
-    targetFeatureValues.resize(num_features);
+    inactiveCounter.resize(num_features,0);
+    targetFeatureValues.resize(num_features, 0.);
+    featureActive.resize(num_features, false);
 
     featureGuiElements.resize(num_features+2);
     featureGuiElements[0] = make_unique<FillCircle>();
@@ -71,9 +76,9 @@ void ofApp::setup(){
     ofBackground(0);
 
     for(int i =0; i < num_features;i++){
-        coms.sendLightControl(i+2, 0);
+        coms.sendLightControl(i+3, 0);
     }
-    coms.sendLightControl(2,4095);
+    coms.sendLightControl(3,4095);
 
     setLayout();
 }
@@ -151,11 +156,12 @@ void ofApp::initAudio(){
     std::vector<ofSoundDevice> devices = soundStream.getDeviceList();
     ofSoundStreamSettings s;
     int device_id = Settings::getInt("audio_device_id");
-    s.setInDevice(devices[device_id]);
-    s.numBuffers=4;
-    s.sampleRate=44100;
-    s.bufferSize=IN_AUDIO_BUFFER_LENGTH;
-    soundStream.setup(s);
+    soundStream.setDeviceID(device_id);
+//    s.numBuffers=4;
+//    s.sampleRate=44100;
+//    s.bufferSize=IN_AUDIO_BUFFER_LENGTH;
+//    soundStream.setup(s);
+    soundStream.setup(this, 0, 2, 44100, IN_AUDIO_BUFFER_LENGTH, 4);
 }
 
 void ofApp::setLayout(){
@@ -168,7 +174,7 @@ void ofApp::setLayout(){
     float rem =1.-div;
 
     imageManager->setLayout(div*windowWidth, 0, rem*windowWidth, 3*windowHeight/4);
-    worldMap.setLayout(0, windowHeight/4, div*windowWidth, 2* windowHeight/4);
+//    worldMap.setLayout(0, windowHeight/4, div*windowWidth, 2* windowHeight/4);
     pointCloudRender.setLayout(0, windowHeight/4, div*windowWidth, 2* windowHeight/4);
     waveform.setLayout(0,0, div*windowWidth, windowHeight/4 );
 
@@ -245,11 +251,12 @@ void ofApp::update(){
     }
 
     pointCloudRender.update();
+    pointCloudRender.meshFromConnections(fKNN.getConnectionsForFeature(lastActiveFeatureIndex));
+
     if ((currentTime - search_timer)>100)
     {
 //        pointCloudRender.updatePointPositions(fKNN.getPointFeatureDistances(targetFeatureValues, featureWeights), featureWeights);
         fKNN.getKNN(targetFeatureValues, featureWeights);
-        pointCloudRender.meshFromConnections(fKNN.getConnectionsForFeature(0));
 
 
         search_timer =currentTime;
@@ -297,14 +304,16 @@ void ofApp::update(){
         }
 
         //After 5 seconds of inactivity decrement the weight by 0.1 every 0.5 seconds
-        if (inactiveCounter[i]>300 && featureWeights[i] >0){
+        if (inactiveCounter[i]>featureTimeout && featureWeights[i] >0){
             //            if ((inactiveCounter[i] %30) ==0){
-            featureWeights[i] = CLAMP(featureWeights[i] -0.1/30, 0., 1.);
+            featureWeights[i] = CLAMP(featureWeights[i] - featureDecayRate, 0., 1.);
             desireChanged=true;
+//            featureActive[i]=false;
             //            }
         }
 
-        else if (inactiveCounter[i]>300 && featureWeights[i] ==0.){
+        else if (inactiveCounter[i]>featureTimeout && featureWeights[i] ==0.){
+            featureActive[i]=false;
             continue;
         }
 
@@ -343,7 +352,7 @@ void ofApp::update(){
     for (int i = 0; i <featureWeights.size(); i++)
     {
         if (lastFeatureWeights[i]!=featureWeights[i]){
-            coms.sendLightControl(i+2, int(featureWeights[i]*4096));
+            coms.sendLightControl(i+3, int(featureWeights[i]*4096));
         }
     }
 
@@ -362,6 +371,8 @@ void ofApp::update(){
         featureGuiElements[i+2]->setWeight(featureWeights[i]);
         featureGuiElements[i+2]->setValue(lastFeatureValues[i]);
         featureGuiElements[i+2]->setTarget(targetFeatureValues[i]);
+        featureGuiElements[i+2]->setActive(featureActive[i]);
+
     }
 
 
@@ -560,8 +571,13 @@ void ofApp::updatePlayingVideo(string video){
     imageManager->loadImages(currentPlayingVideo);
     lastFeatureValues = featureValues;
     featureValues = databaseLoader.getFeaturesFromName(currentPlayingVideo);
+    for (int i =0; i <featureValues.size(); i++){
+        if (!featureActive[i]){
+            targetFeatureValues[i] = featureValues[i];
+        }
+    }
     fKNN.setPlayingIndex(databaseLoader.getVideoIndexFromName(currentPlayingVideo));
-    pointCloudRender.playingIndex = databaseLoader.getVideoIndexFromName(currentPlayingVideo);
+    pointCloudRender.setPlayingNode(databaseLoader.getVideoIndexFromName(currentPlayingVideo));
 
 }
 
@@ -583,12 +599,11 @@ void ofApp::setSpeed(int value){
 }
 
 void ofApp::incrementFeatureTarget(int index, float step){
+
     targetFeatureValues[index] =CLAMP(targetFeatureValues[index]+step, 0., 1.);
-    featureWeights[index]=1.0;
-    inactiveCounter[index] = 0;
-    desireChanged=true;
-    activityTimer = 0;
-    input_activity = true;
+
+    updateActiveFeature(index);
+
 }
 
 void ofApp::toggleFeatureTarget(int index){
@@ -596,12 +611,24 @@ void ofApp::toggleFeatureTarget(int index){
     int target_value = 0.;
     if (v<.5) target_value = 1.;
     targetFeatureValues[index] =CLAMP(target_value, 0., 1.);
+
+    updateActiveFeature(index);
+}
+
+void ofApp::updateActiveFeature(int index){
+    lastActiveFeatureIndex =index;
+    featureActive[index]=true;
     featureWeights[index]=1.0;
     inactiveCounter[index] = 0;
     desireChanged=true;
     activityTimer = 0;
     input_activity = true;
+    for(int i=0; i<this->inactiveCounter.size(); i++){
+        if (i ==index )continue;
+        inactiveCounter[i] = featureTimeout;
+    }
 }
+
 
 void ofApp::updateOSC() {
     // hide old messages
@@ -772,7 +799,13 @@ void ofApp::handleButtonInput(int index){
         return;
     }
 
-    index =index-2;
+    if (index ==2){
+//        setSpeed(0);
+//        return;
+        //Set number of neighbours to something else
+    }
+
+    index =index-3;
     toggleFeatureTarget(index);
 }
 
