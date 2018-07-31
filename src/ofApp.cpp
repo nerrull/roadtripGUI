@@ -1,4 +1,10 @@
-#include "ofApp.h"5
+#include "ofApp.h"
+#include "ofxJsonSettings.h"
+
+
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
 
 
 //--------------------------------------------------------------
@@ -8,40 +14,58 @@ void ofApp::setup(){
     ofSetDrawBitmapMode(OF_BITMAPMODE_MODEL);
     ofEnableAlphaBlending();
     ofEnableDepthTest();
+    ofSetCircleResolution(100);
     glPointSize(2.0);
-    font.load("verdana.ttf", 12);
+
+    Settings::get().load("settings.json");
+    string db_path = Settings::getString("db_path");
+    DEV_MODE = Settings::getBool("dev_mode");
+
+    if (DEV_MODE) ofSetFrameRate(60);
+
+    font.load("futura.ttf", 12);
     initAudio();
     initNames();
-    DEV_MODE = false;
-//    ofSetLogLevel(OF_LOG_ERROR);
+    //    ofSetLogLevel(OF_LOG_ERROR);
     ofSetLogLevel(OF_LOG_NOTICE);
 
 
-    if (!DEV_MODE) imageManager = new ImageManager();
-    num_knobs =23;
+    imageManager = new ImageManager();
+    numKnobs =23;
     search_timer =ofGetElapsedTimeMillis();
 
-    string db_path = "/home/nuc/Documents/dataStore/database.h5";
     databaseLoader.loadHDF5Data(db_path);
+    worldMap.setVideoPoints(databaseLoader.getCoordinates());
+    fKNN.init(&databaseLoader);
+//    pointCloudRender.initPoints(fKNN.num_points, databaseLoader.colors);
+    pointCloudRender.initPoints(databaseLoader.dimension_reduction, databaseLoader.colors);
 
-    pointCloudTree = new PointCloudTreeSearch(&databaseLoader);
-    pointCloudTree->initPoints();
 
-    int num_features = databaseLoader.getFeatures()[0][0].size();
+    int num_features =21;
+
     //Initialize weight to zero
     featureValues.resize(num_features);
     lastFeatureValues.resize(num_features);
     lastFeatureWeights.resize(num_features);
     featureWeights = vector<float>(num_features, 0.);
     inactiveCounter.resize(num_features);
-    desiredFeatureValues.resize(num_features);
+    targetFeatureValues.resize(num_features);
 
+    featureGuiElements.resize(num_features+2);
+    featureGuiElements[0] = make_unique<FillCircle>();
+    featureGuiElements[1] = make_unique<SearchRadiusElement>();
+
+    for (int i =2; i<featureGuiElements.size(); i++){
+        featureGuiElements[i]= make_unique<CircleFeatureGuiElement>();
+    }
+    //Init custom gui elements (hue)
+    featureGuiElements[11] = make_unique<ColorCircle>();
     speedSetting =0;
     activityTimer =0;
 
     //Make loudness the only active feature
     featureWeights[0]= 1.;
-    current_playing_video ="";
+    currentPlayingVideo ="";
 
     windowResized(ofGetWidth(),ofGetHeight());
     ofBackground(0);
@@ -51,72 +75,207 @@ void ofApp::setup(){
     }
     coms.sendLightControl(2,4095);
 
-
+    setLayout();
 }
 
 void ofApp::initNames(){
-    feature_names_en.push_back("Loudness");
-    feature_names_en.push_back("Spectral Centroid");
-    feature_names_en.push_back("Percussiveness");
-    feature_names_en.push_back("Pitched");
-    feature_names_en.push_back("Harmonicity");
-    feature_names_en.push_back("Vehicle speed");
-    feature_names_en.push_back("Instability");
-    feature_names_en.push_back("Engine temperature");
-    feature_names_en.push_back("Engine RPM");
-    feature_names_en.push_back("Intake temperature");
-    feature_names_en.push_back("Roll");
-    feature_names_en.push_back("Hue");
-    feature_names_en.push_back("Lightness");
-    feature_names_en.push_back("Uncertainty");
-    feature_names_en.push_back("Building");
-    feature_names_en.push_back("Pavement");
-    feature_names_en.push_back("Road");
-    feature_names_en.push_back("Sky");
-    feature_names_en.push_back("Vegetation");
-    feature_names_en.push_back("Vehicle");
-    feature_names_en.push_back("Signage");
-    feature_names_en.push_back("Fence Pole");
+
+
+    featureNamesEn.push_back("Loudness");
+    featureNamesEn.push_back("Spectral\nCentroid");
+    featureNamesEn.push_back("Percussiveness");
+//    featureNamesEn.push_back("Pitched");
+    featureNamesEn.push_back("Bandwidth");
+    featureNamesEn.push_back("Vehicle speed");
+    featureNamesEn.push_back("Instability");
+    featureNamesEn.push_back("Engine RPM");
+    featureNamesEn.push_back("Intake T°");
+    featureNamesEn.push_back("Roll");
+    featureNamesEn.push_back("Hue");
+    featureNamesEn.push_back("Lightness");
+    featureNamesEn.push_back("Uncertainty");
+    featureNamesEn.push_back("Building");
+    featureNamesEn.push_back("Pavement");
+    featureNamesEn.push_back("Road");
+    featureNamesEn.push_back("Sky");
+    featureNamesEn.push_back("Vegetation");
+    featureNamesEn.push_back("Vehicle");
+    featureNamesEn.push_back("Signage");
+    featureNamesEn.push_back("Fence/Pole");
+    featureNamesEn.push_back("Bike/Pedestrian");
+
+
+    featureNamesFr.push_back("Volume");
+    featureNamesFr.push_back("Centroïde\nSpectral");
+    featureNamesFr.push_back("Percussif");
+//    featureNamesFr.push_back("Hauteur?");
+    featureNamesFr.push_back("Largeur\nde bande");
+    featureNamesFr.push_back("Vitesse");
+    featureNamesFr.push_back("Instabilité");
+    featureNamesFr.push_back("RPM Moteur");
+    featureNamesFr.push_back("T° extérieur");
+    featureNamesFr.push_back("Inclinaison");
+    featureNamesFr.push_back("Teinte?");
+    featureNamesFr.push_back("Luminosité");
+    featureNamesFr.push_back("Incertitude");
+    featureNamesFr.push_back("Bâtiment");
+    featureNamesFr.push_back("Trottoir");
+    featureNamesFr.push_back("Route");
+    featureNamesFr.push_back("Ciel");
+    featureNamesFr.push_back("Végétation");
+    featureNamesFr.push_back("Véhicule");
+    featureNamesFr.push_back("Signalisation");
+    featureNamesFr.push_back("Clôture/Pôteau");
+    featureNamesFr.push_back("Piéton/Vélo");
+
+
+    languageIsEnglish = Settings::getBool("english");
+    if (languageIsEnglish) {
+        durationName= "Duration";
+        neighbourName= "Neigbours";
+
+        featureNames = featureNamesEn;
+    }
+    else {
+        durationName= "Durée";
+        neighbourName = "Voisins";
+
+        featureNames = featureNamesFr;
+
+    }
 }
 
 void ofApp::initAudio(){
     audioToggle = true;
     soundStream.printDeviceList();
-    soundStream.setDeviceID(7); //Is computer-specific
-    soundStream.setup(this, 0, 2, 44100, IN_AUDIO_BUFFER_LENGTH, 4);
+    std::vector<ofSoundDevice> devices = soundStream.getDeviceList();
+    ofSoundStreamSettings s;
+    int device_id = Settings::getInt("audio_device_id");
+    s.setInDevice(devices[device_id]);
+    s.numBuffers=4;
+    s.sampleRate=44100;
+    s.bufferSize=IN_AUDIO_BUFFER_LENGTH;
+    soundStream.setup(s);
+}
+
+void ofApp::setLayout(){
+    int windowWidth =ofGetWidth();
+    int windowHeight=ofGetHeight();
+
+    //Set widget layouts
+    float div = 14./23.;
+
+    float rem =1.-div;
+
+    imageManager->setLayout(div*windowWidth, 0, rem*windowWidth, 3*windowHeight/4);
+    worldMap.setLayout(0, windowHeight/4, div*windowWidth, 2* windowHeight/4);
+    pointCloudRender.setLayout(0, windowHeight/4, div*windowWidth, 2* windowHeight/4);
+    waveform.setLayout(0,0, div*windowWidth, windowHeight/4 );
+
+    //Place knobs
+    int controlSectionHeight = windowHeight/4;
+    int knobWidth = windowWidth/numKnobs;
+    int offset = knobWidth;
+
+    float max_row_1_height  =0;
+    float max_row_2_height = 0;
+    for (int i = 0; i < featureNames.size(); i++){
+        if (i%2 ==0){
+            max_row_1_height = max(font.stringHeight(featureNames[i]), max_row_1_height);
+        }
+        else{
+            max_row_2_height = max(font.stringHeight(featureNames[i]), max_row_2_height);
+        }
+    }
+
+    int textHeight = max_row_1_height + max_row_2_height +20;
+    int knobSectionHeight = controlSectionHeight - textHeight;
+    int elementHeight = knobSectionHeight/2;
+    int elementWidth = knobWidth*1.1;
+    int firstRowOffset =max_row_1_height;
+    int secondRowOffset =max_row_1_height+elementHeight ;
+
+    //Initialize special knobs
+    featureGuiElements[0]->setName(durationName);
+    featureGuiElements[1]->setName(neighbourName);
+
+    int x, y;
+    x = 0;
+    for (int i=0; i<featureGuiElements.size(); i++){
+        y = windowHeight - controlSectionHeight;
+        if (i%2 ==0){
+            featureGuiElements[i]->setTextOnTop(true);
+            featureGuiElements[i]->setCircleOffset(firstRowOffset);
+        }
+        else{
+            y +=secondRowOffset;
+            featureGuiElements[i]->setTextOnTop(false);
+        }
+
+        featureGuiElements[i]->setPosition(x,y);
+        featureGuiElements[i]->setSize(elementWidth, elementHeight);
+
+        if (i>=2){
+            featureGuiElements[i]->setName(featureNames[i-2]);
+
+        }
+        x+=knobWidth;
+    }
+
+    ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Offset "<<rectangleOffset;
+    ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Remaining space "<< spaceRemainder;
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
     updateOSC();
-    if (!DEV_MODE) imageManager->update();
-    pointCloudTree->update();
+    if (DEV_MODE){
+        handlePythonMessages();
+    }
 
+    //Log incoming and outgoing messages
     uint64_t currentTime = ofGetElapsedTimeMillis();
+    if ((currentTime - search_timer)>1000)
+    {
+        ofLogNotice()<<"Received " <<incomingControllerMessageCounter<< " OSC messages from controller in the last second"<<endl;
+        ofLogNotice()<<"Received " <<incomingPlayerMessageCounter<< " OSC messages from player in the last second"<<endl;
+        coms.logMessageCount();
+        incomingControllerMessageCounter =0;
+        incomingPlayerMessageCounter =0;
+    }
+
+    pointCloudRender.update();
     if ((currentTime - search_timer)>100)
     {
-        pointCloudTree->updateSearchSpace(desiredFeatureValues, featureWeights);
-        pointCloudTree->getKNN(desiredFeatureValues, featureWeights);
+//        pointCloudRender.updatePointPositions(fKNN.getPointFeatureDistances(targetFeatureValues, featureWeights), featureWeights);
+        fKNN.getKNN(targetFeatureValues, featureWeights);
+        pointCloudRender.meshFromConnections(fKNN.getConnectionsForFeature(0));
+
+
         search_timer =currentTime;
-        video_indexes = pointCloudTree->getSearchResultIndexes();
+        videoIndexes = fKNN.getSearchResultIndexes();
+        pointCloudRender.setActiveNodes(videoIndexes);
+        //DEBUG MODE
+//        fKNN.setPlayingIndex(videoIndexes[0]);
+//        pointCloudRender.playingIndex = videoIndexes[0];
 
         std::ostringstream oss;
-         if (!video_indexes.empty())
-         {
-           // Convert all but the last element to avoid a trailing ","
-           std::copy(video_indexes.begin(), video_indexes.end()-1,
-               std::ostream_iterator<int>(oss, ","));
+        if (!videoIndexes.empty())
+        {
+            // Convert all but the last element to avoid a trailing ","
+            std::copy(videoIndexes.begin(), videoIndexes.end()-1,
+                      std::ostream_iterator<int>(oss, ","));
 
-           // Now add the last element with no delimiter
-           oss << video_indexes.back();
-         }
+            // Now add the last element with no delimiter
+            oss << videoIndexes.back();
+        }
 
-         //std::cout << oss.str() << std::endl;
-         vector<string> videoNames = databaseLoader.getVideoNamesFromIndexes(pointCloudTree->getSearchResultIndexes());
+        //std::cout << oss.str() << std::endl;
+        vector<string> videoNames = databaseLoader.getVideoNamesFromIndexes(fKNN.getSearchResultIndexes());
         if (input_activity){
-            if (current_playing_video != videoNames[0]){
+            if (currentPlayingVideo != videoNames[0]){
                 coms.publishVideoNow( videoNames[0], true);
-                current_playing_video = videoNames[0];
+                currentPlayingVideo = videoNames[0];
                 lastVideos.clear();
                 lastVideos.push_back(videoNames[0]);
             }
@@ -139,13 +298,13 @@ void ofApp::update(){
 
         //After 5 seconds of inactivity decrement the weight by 0.1 every 0.5 seconds
         if (inactiveCounter[i]>300 && featureWeights[i] >0){
-//            if ((inactiveCounter[i] %30) ==0){
-                featureWeights[i] = CLAMP(featureWeights[i] -0.1/30, 0., 1.);
-                desireChanged=true;
-//            }
+            //            if ((inactiveCounter[i] %30) ==0){
+            featureWeights[i] = CLAMP(featureWeights[i] -0.1/30, 0., 1.);
+            desireChanged=true;
+            //            }
         }
 
-        else if (inactiveCounter[i]>300 == featureWeights[i] ==0.){
+        else if (inactiveCounter[i]>300 && featureWeights[i] ==0.){
             continue;
         }
 
@@ -156,23 +315,29 @@ void ofApp::update(){
 
     if (!input_activity && totalWeight <1.){
         //Decrement amplitude if it's not already at 0
-        if (desiredFeatureValues[0] != 0.){
-            desiredFeatureValues[0] = CLAMP(desiredFeatureValues[0] - 0.01, 0., 1.);
+        if (targetFeatureValues[0] != 0.){
+            targetFeatureValues[0] = CLAMP(targetFeatureValues[0] - 0.01, 0., 1.);
         }
         totalWeight = std::accumulate(featureWeights.begin()+1, featureWeights.end(), 0.);
         featureWeights[0] = 1-totalWeight;
 
+
         //Decrement speed while inactive
-        if (speedSetting >0 && inactiveCounter[0] > 300 &&inactiveCounter[0] %60 ==0){
-            setSpeed(speedSetting -1);
-        }
-        //pointCloudTree->updateSearchSpace(desiredFeatureValues, indexWeights);
+
+//        if (speedSetting >0 && inactiveCounter[0] > 300 &&inactiveCounter[0] %60 ==0){
+//            setSpeed(speedSetting -1);
+//        }
     }
 
     //Do coms stuff
     if (speedChanged){
         coms.publishSpeed(speedSetting);
         speedChanged = false;
+        int speed = SPEEDS[speedSetting];
+        if (speed == -1) speed = playingFileDuration;
+
+        featureGuiElements[0]->setValue(1000./60./speed);
+
     }
 
     for (int i = 0; i <featureWeights.size(); i++)
@@ -182,17 +347,31 @@ void ofApp::update(){
         }
     }
 
-    //Reset the input activity flag
-    lastFeatureValues = featureValues;
+    //Update gui elements
+    featureGuiElements[0]->update(); //Update speed timer
+    featureGuiElements[1]->update(); //Update search radius
+
+
+    for (int i = 0; i <featureWeights.size(); i++){
+
+        //Do some interpolation on the value
+        float diff = featureValues[i] - lastFeatureValues[i];
+        float inc = sgn(diff)*diff*diff;
+        lastFeatureValues[i]+=inc;
+
+        featureGuiElements[i+2]->setWeight(featureWeights[i]);
+        featureGuiElements[i+2]->setValue(lastFeatureValues[i]);
+        featureGuiElements[i+2]->setTarget(targetFeatureValues[i]);
+    }
+
+
+    //Upekep for next loop
     lastFeatureWeights = featureWeights;
-
-
 
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-
 
     ofBackground(0);
     ofSetColor(255);
@@ -206,13 +385,13 @@ void ofApp::draw(){
     int windowWidth =ofGetWidth();
     int windowHeight=ofGetHeight();
 
-    waveform.draw(0, 0, windowWidth/4, windowHeight/3 );
-    waveform.drawSpectrum(0, windowHeight/3 , windowWidth/4, windowHeight/3 -10 );
+    waveform.draw();
 
-    colourInspector.draw(0,windowHeight/3, windowWidth/4, windowHeight/3 -10);
-    pointCloudTree->draw();
-
-    if (!DEV_MODE) imageManager->draw(3*windowWidth/4, 0, windowWidth/4, 2*windowHeight/3 -10);
+    //colourInspector.draw();
+    //pointCloudTree->draw();
+//    worldMap.draw();
+    pointCloudRender.draw();
+    imageManager->draw();
 
     //drawColors();
 
@@ -221,78 +400,12 @@ void ofApp::draw(){
 
 }
 
-template <typename T> int sgn(T val) {
-    return (T(0) < val) - (val < T(0));
-}
-
+//Draw control gui elements
 void ofApp::drawControls(int windowWidth, int windowHeight){
 
-    int offset =spaceRemainder/2;
-
-    //Draw speed control
-    {
-        if (speedChanged){
-             ofSetColor(240);
-        }
-
-        offset+=rectangleOffset;
-        float value =ofRandom(0.,1.);
-        int height = max(minHeight, speedSetting *rectangleMaxHeight/8);
-        ofNoFill();
-        ofSetLineWidth(1);
-        ofDrawRectangle(offset,rectangleTop, rectangleWidth, ofGetHeight()/3);
-        ofSetLineWidth(0);
-        ofFill();
-        ofDrawRectangle(offset+3,ofGetHeight()+3-height, rectangleWidth-6, height-6);
-
-        ofPushMatrix();
-        ofSetColor(80);
-//        ofTranslate(offset, windowHeight-20,1);
-        ofTranslate(offset, windowHeight-20,1);
-
-        ofRotateZDeg(-90.);
-        string name = "BPM";
-        float fontWidth = font.stringHeight(name);
-        float fontHeight = font.stringWidth(name);
-        font.drawString(name,0,rectangleWidth/2 +fontWidth/2);
-        ofPopMatrix();
-
-        offset+=rectangleWidth;
-
-    }
-
     //Draw feature controls
-    for(int i = 0; i<featureValues.size(); i++){
-
-
-        ofSetColor(80);
-        offset+=rectangleOffset;
-        float value =ofRandom(0.,1.);
-        float diff = featureValues[i] - lastFeatureValues[i];
-        float inc = sgn(diff)*diff*diff;
-        lastFeatureValues[i]+=inc;
-        int height = max(minHeight, int((lastFeatureValues[i] * rectangleMaxHeight)));
-        ofNoFill();
-        ofSetLineWidth(1);
-        ofDrawRectangle(offset,rectangleTop, rectangleWidth, ofGetHeight()/3);
-        ofSetLineWidth(0);
-        ofFill();
-        ofDrawRectangle(offset+3,ofGetHeight()+3-height, rectangleWidth-6, height-6);
-
-
-        ofDrawCircle(offset+rectangleWidth, ofGetHeight() - desiredFeatureValues[i]*rectangleMaxHeight, 3);
-
-        ofPushMatrix();
-        ofSetColor(255);
-        ofTranslate(offset, windowHeight-20,1);
-        ofRotateZDeg(-90.);
-        string name = feature_names_en[i];
-
-        float fontWidth = font.stringHeight(name);
-        font.drawString(name,0,rectangleWidth/2 +fontWidth/2);
-        ofPopMatrix();
-
-        offset+=rectangleWidth;
+    for (int i=0; i< featureGuiElements.size(); i++){
+        featureGuiElements[i]->draw();
     }
 }
 
@@ -374,9 +487,20 @@ void ofApp::drawColors(){
     ofPopMatrix();
 }
 
+void ofApp::toggleLanguage(){
+    languageIsEnglish = !languageIsEnglish;
+    if (languageIsEnglish){
+        featureNames = featureNamesEn;
+    }
+    else featureNames = featureNamesFr;
+    setLayout();
+}
+
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+    if (key =='l'){
+        toggleLanguage();
+    }
 }
 
 
@@ -417,19 +541,8 @@ void ofApp::mouseExited(int x, int y){
 
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h){
+    setLayout();
 
-    rectangleWidth = ofGetWidth()/num_knobs-20;
-    int emptySpace = ofGetWidth() -num_knobs*rectangleWidth;
-    rectangleTop = ofGetHeight()*2/3 ;
-    rectangleOffset = emptySpace/num_knobs+1;
-    spaceRemainder = emptySpace - (num_knobs+1)*rectangleOffset;
-    minHeight = 7;
-    rectangleMaxHeight = ofGetHeight() -rectangleTop;
-
-    pointCloudTree->setViewPort(ofGetWidth()/4, 0, ofGetWidth()/2, 2*  ofGetHeight()/3);
-
-    ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Offset "<<rectangleOffset;
-    ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Remaining space "<< spaceRemainder;
 }
 
 //--------------------------------------------------------------
@@ -443,11 +556,13 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 }
 
 void ofApp::updatePlayingVideo(string video){
-    current_playing_video = video;
-    if (!DEV_MODE) imageManager->loadImages(current_playing_video);
+    currentPlayingVideo = video;
+    imageManager->loadImages(currentPlayingVideo);
     lastFeatureValues = featureValues;
-    featureValues = databaseLoader.getFeaturesFromName(current_playing_video);
-    pointCloudTree->setPlayingIndex(databaseLoader.getVideoIndexFromName(current_playing_video));
+    featureValues = databaseLoader.getFeaturesFromName(currentPlayingVideo);
+    fKNN.setPlayingIndex(databaseLoader.getVideoIndexFromName(currentPlayingVideo));
+    pointCloudRender.playingIndex = databaseLoader.getVideoIndexFromName(currentPlayingVideo);
+
 }
 
 void ofApp::incrementSpeed(int step){
@@ -455,14 +570,20 @@ void ofApp::incrementSpeed(int step){
     speedChanged =true;
 }
 
+void ofApp::incrementSearchRadius(int step){
+    float step_norm = float(step)/20.;
+    float search_radius=  CLAMP(this->fKNN.threshold_distance+step, 0., 1.);
+    this->fKNN.updateSearchRadius(search_radius);
+        this->featureGuiElements[1]->setValue(search_radius);
+}
+
 void ofApp::setSpeed(int value){
     speedSetting=  CLAMP(value, 0, 8);
     speedChanged =true;
 }
 
-
 void ofApp::incrementFeatureTarget(int index, float step){
-    desiredFeatureValues[index] =CLAMP(desiredFeatureValues[index]+step, 0., 1.);
+    targetFeatureValues[index] =CLAMP(targetFeatureValues[index]+step, 0., 1.);
     featureWeights[index]=1.0;
     inactiveCounter[index] = 0;
     desireChanged=true;
@@ -471,10 +592,10 @@ void ofApp::incrementFeatureTarget(int index, float step){
 }
 
 void ofApp::toggleFeatureTarget(int index){
-    float v = desiredFeatureValues[index];
+    float v = targetFeatureValues[index];
     int target_value = 0.;
     if (v<.5) target_value = 1.;
-    desiredFeatureValues[index] =CLAMP(target_value, 0., 1.);
+    targetFeatureValues[index] =CLAMP(target_value, 0., 1.);
     featureWeights[index]=1.0;
     inactiveCounter[index] = 0;
     desireChanged=true;
@@ -486,11 +607,19 @@ void ofApp::updateOSC() {
     // hide old messages
     while( coms.receiver_playing.hasWaitingMessages() )
     {
+        incomingPlayerMessageCounter++;
         ofxOscMessage m;
         coms.receiver_playing.getNextMessage( m );
         if ( m.getAddress().compare( string("/PLAYING_VIDEO") ) == 0 )
         {
             updatePlayingVideo(m.getArgAsString(0));
+            playingFileDuration = m.getArgAsInt64(1);
+
+            if (this->speedSetting ==0){
+               featureGuiElements[0]->setValue(1000./60./playingFileDuration);
+            }
+            featureGuiElements[0]->reset();
+
         }
         else
         {
@@ -503,6 +632,7 @@ void ofApp::updateOSC() {
 
     while( coms.receiver_controller.hasWaitingMessages() )
     {
+        incomingControllerMessageCounter++;
         // get the next message
         ofxOscMessage m;
         coms.receiver_controller.getNextMessage( m );
@@ -527,8 +657,88 @@ void ofApp::updateOSC() {
     }
 }
 
+void ofApp::handlePythonMessages(){
+    // check for waiting messages
+    while( coms.receiver_python_controller.hasWaitingMessages() )
+    {
+        // get the next message
+        ofxOscMessage m;
+        coms.receiver_python_controller.getNextMessage(m );
+
+        // check for mouse button message
+        if ( m.getAddress().compare( string("/FEATURE_DIFFS") ) == 0 )
+        {
+            // the single argument is a string
+            for (int i =0; i<23;i++){
+                float diff =  m.getArgAsFloat(i);
+
+                if (abs(diff) >0){
+                    if (i ==0){
+                        incrementSpeed(diff);
+                    }
+                    if (i ==1){
+                        incrementSearchRadius(diff*100);
+                    }
+
+                    if (i> 1){
+                        targetFeatureValues[i-2] =CLAMP(targetFeatureValues[i-2] +diff, 0., 1.);
+                        inactiveCounter[i-2] = 0;
+                        featureWeights[i-2]=1.0;
+
+                        desireChanged=true;
+                        activityTimer = 0;
+
+                        input_activity = true;
+                    }
+
+                }
+            }
+
+            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "FEATURE_DIFFS Message received : " ;
+        }
+
+        if ( m.getAddress().compare( string("/SET_SPEED") ) == 0 )
+        {
+
+            speedSetting=  m.getArgAsInt(0);
+            speedChanged =true;
+        }
+
+        else if ( m.getAddress().compare( string("/FEATURE_VALUES") ) == 0 )
+        {
+            // the single argument is a string
+
+            for (int i =0; i<24;i++){
+                featureValues[i] = m.getArgAsFloat(i);
+            }
+            string fileName = m.getArgAsString(24);
+            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Message received : " ;
+            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Values : " << featureValues[0]<<featureValues[23] ;
+
+
+        }
+
+        else if ( m.getAddress().compare( string("/FEATURE_NAMES") ) == 0 )
+        {
+            // the single argument is a string
+            featureNames.clear();
+            for (int i =0; i<24;i++){
+                featureNames.push_back(m.getArgAsString(i));
+            }
+
+            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Feature names : " ;
+            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Ex : " << featureNames[0]<<" to " <<featureNames[23] ;
+        }
+        else
+        {
+            ofLogError()<<  m.getAddress();
+        }
+    }
+
+}
+
 void ofApp::handleKnobInput(ofxOscMessage m){
-//    ofLogDebug(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
+    //    ofLogDebug(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
     int i = m.getArgAsInt(0);
 
     if (i ==1){
@@ -538,24 +748,32 @@ void ofApp::handleKnobInput(ofxOscMessage m){
         return;
     }
 
-     i =i-2;
+    if (i ==2){
+        int step =m.getArgAsInt(1);
+        if (step ==0) step = -1;
+        incrementSearchRadius(step);
+        return;
+    }
 
-    float step = (float(m.getArgAsInt(1)) -0.5)*2/100.;
+
+    i =i-3;
+
+    float step = (float(m.getArgAsInt(1)) -0.5)*2/50.;
     incrementFeatureTarget(i, step);
 }
 
 
 
 void ofApp::handleButtonInput(int index){
-//    ofLogDebug(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
+    //    ofLogDebug(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
 
     if (index ==1){
         setSpeed(0);
         return;
     }
 
-     index =index-2;
-     toggleFeatureTarget(index);
+    index =index-2;
+    toggleFeatureTarget(index);
 }
 
 
@@ -564,7 +782,7 @@ bool ofApp::vectorsAreEqual(vector<string>v1, vector<string> v2){
         return false;
     }
     else if (!std::equal(v1.begin(), v1.begin() + v1.size(), v2.begin())){
-       return false;
+        return false;
     }
     return true;
 }

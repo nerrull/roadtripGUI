@@ -2,39 +2,53 @@
 
 #include "ofMain.h"
 #include "ofxOsc.h"
-#include "imagemanager.h"
-#include "segnetcolourinspector.h"
-#include "audiowaveform.h"
-#include "databaseloader.h"
-#include "pointcloudtreesearch.h"
-#include "communication.h"
+#include "gui/imagemanager.h"
+#include "gui/segnetcolourinspector.h"
+#include "gui/audiowaveform.h"
+#include "gui/worldmapvisual.h"
+#include "gui/pointcloudrenderer.h"
+#include "util/featureKNN.h"
+#include "util/databaseloader.h"
+#include "util/communication.h"
+#include "uielements.h"
 
 #define NUM_MSG_STRINGS 20
+
+
 
 class ofApp : public ofBaseApp{
 
 public:
-
-
-
-    void drawColors();
-    float getColorValue(string id);
+    //Init functions
     void initAudio();
-    bool vectorsAreEqual(vector<string>v1, vector<string> v2);
-    void drawControls(int,int);
     void initNames();
-    void updatePlayingVideo(string video);
-    void incrementSpeed(int step);
-    void incrementFeatureTarget(int index, float step);
+    void setLayout();
+
+    //Draw/update functions
+    void drawColors();
+    void drawControls(int,int);
+
+    //Coms
     void updateOSC();
-    void handleKnobInput(ofxOscMessage m);
-    void handleButtonInput(int index);
+    void updatePlayingVideo(string video);
+    void handlePythonMessages();
+
 
     void setSpeed(int value);
     void toggleFeatureTarget(int index);
+    void incrementSpeed(int step);
+    void incrementFeatureTarget(int index, float step);
+    void incrementSearchRadius(int step);
 
 
+    float getColorValue(string id);
+    void handleKnobInput(ofxOscMessage m);
+    void handleButtonInput(int index);
+    bool vectorsAreEqual(vector<string>v1, vector<string> v2);
+    void toggleLanguage();
 
+
+    //Default functions
     void setup();
     void update();
     void draw();
@@ -52,13 +66,19 @@ public:
     void gotMessage(ofMessage msg);
     void audioIn(ofSoundBuffer & input);
 
+
+    //GUI elements
     ImageManager* imageManager;
     SegnetColourInspector colourInspector;
     AudioWaveform waveform;
     DatabaseLoader databaseLoader;
-    PointCloudTreeSearch* pointCloudTree;
-    CommunicationManager coms;
+    FeatureKNN fKNN;
+    PointCloudRenderer pointCloudRender;
+    WorldMapVisual worldMap;
 
+    vector<unique_ptr<CircleFeatureGuiElement>> featureGuiElements;
+
+    CommunicationManager coms;
     ofTrueTypeFont font;
     ofSoundStream soundStream;
 
@@ -68,31 +88,44 @@ public:
     int spaceRemainder;
     int rectangleTop;
     int minHeight;
-    int num_knobs;
+    int numKnobs;
 
-    vector<float> featureWeights;
-    vector<float>lastFeatureWeights;
-
-    vector<int> inactiveCounter;
-    vector<float>desiredFeatureValues;
-    vector<int> video_indexes;
+    int incomingPlayerMessageCounter;
+    int incomingControllerMessageCounter;
 
     int activityTimer;
+    int playingFileDuration =1000;
+
+    vector<float> featureWeights;
+    vector<float> lastFeatureWeights;
+
+    vector<int> inactiveCounter;
+    vector<float> targetFeatureValues;
+    vector<int> videoIndexes;
+
     vector<float>featureValues;
     vector<float>lastFeatureValues;
-    vector<string> feature_names_en;
-    vector<string> feature_names_fr;
+    vector<string> featureNamesEn;
+    vector<string> featureNamesFr;
+    vector<string> featureNames;
+    string durationName, neighbourName;
+
+
 
     bool input_activity = false;
     bool audioToggle;
     bool desireChanged = false;
     bool speedChanged = false;
     bool DEV_MODE;
+    bool languageIsEnglish;
 
     uint64_t search_timer;
     int speedSetting;
-    string current_playing_video;
+    string currentPlayingVideo;
     vector<string> lastVideos;
-    std::vector<string> featureNames;
+
+
+    int SPEEDS[9] = {-1, 4000, 2000, 1000, 500, 250, 100, 66, 33};
+
 
 };

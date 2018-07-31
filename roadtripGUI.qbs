@@ -9,38 +9,49 @@ Project{
     property string of_root: '../../..'
 
     ofApp {
-        name: { return FileInfo.baseName(sourceDirectory) }
+        name: { return FileInfo.baseName(path) }
 
         files: [
-            "src/databaseloader.cpp",
-            "src/databaseloader.h",
-            "src/audiowaveform.cpp",
-            "src/audiowaveform.h",
-            "src/imageloader.cpp",
-            "src/imageloader.h",
-            "src/imagemanager.cpp",
-            "src/imagemanager.h",
-            "src/pointcloudtreesearch.cpp",
-            "src/pointcloudtreesearch.h",
-            "src/segnetcolourinspector.cpp",
-            "src/segnetcolourinspector.h",
+            "src/gui/pointcloudrenderer.cpp",
+            "src/gui/pointcloudrenderer.h",
+            "src/gui/worldmapvisual.cpp",
+            "src/gui/worldmapvisual.h",
+            "src/util/communication.h",
+            "src/util/databaseloader.cpp",
+            "src/util/databaseloader.h",
+            "src/gui/audiowaveform.cpp",
+            "src/gui/audiowaveform.h",
+            "src/util/featureKNN.cpp",
+            "src/util/featureKNN.h",
+            "src/util/imageloader.cpp",
+            "src/util/imageloader.h",
+            "src/gui/nodeparticlemanager.cpp",
+            "src/gui/nodeparticlemanager.h",
+            "src/gui/imagemanager.cpp",
+            "src/gui/imagemanager.h",
+            "src/gui/segnetcolourinspector.cpp",
+            "src/gui/segnetcolourinspector.h",
             "src/main.cpp",
             "src/ofApp.cpp",
             "src/ofApp.h",
+            "bin/data/settings.json",
+            "bin/data/particle_node_compute.glsl",
+            "src/util/searchspace.h",
         ]
 
-        // This project is using addons.make to include the addons
-        // since it was imported from old code. To change it to include
-        // the addons from the qbs file change the following lines to
-        // the list of used addons in array format. eg:
-        //
-         of.addons: [
-             'ofxOsc',
-             'ofxThreadedImageLoader',
-             'ofxFft',
-             'ofxKDTree',
-             'ofxHDF5',
-         ]
+        of.addons: [
+            'ofxOsc',
+            'ofxThreadedImageLoader',
+            'ofxHDF5',
+            'ofxFft',
+            'ofxKDTree',
+            'ofxJsonSettings',
+            'ofxJSON',
+            'ofxUiElements',
+
+            'ofxWorldMap'
+
+        ]
 
         // additional flags for the project. the of module sets some
         // flags by default to add the core libraries, search paths...
@@ -53,8 +64,6 @@ Project{
         of.defines: []          // defines are passed as -D to the compiler
         // and can be checked with #ifdef or #if in the code
         of.frameworks: []       // osx only, additional frameworks to link with the project
-        of.staticLibraries: []  // static libraries
-        of.dynamicLibraries: [] // dynamic libraries
 
         // other flags can be set through the cpp module: http://doc.qt.io/qbs/cpp-module.html
         // eg: this will enable ccache when compiling
@@ -75,14 +84,6 @@ Project{
             name: "openFrameworks"
         }
     }
-
-    property bool makeOF: true  // use makfiles to compile the OF library
-    // will compile OF only once for all your projects
-    // otherwise compiled per project with qbs
-
-    property bool precompileOfMain: false  // precompile ofMain.h
-    // faster to recompile when including ofMain.h
-    // but might use a lot of space per project
 
     references: [FileInfo.joinPaths(of_root, "/libs/openFrameworksCompiled/project/qtcreator/openFrameworks.qbs")]
 }
