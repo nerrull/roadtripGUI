@@ -19,6 +19,7 @@ Project{
             "src/util/communication.h",
             "src/util/databaseloader.cpp",
             "src/util/databaseloader.h",
+            "src/util/mapfileparser.h",
             "src/gui/audiowaveform.cpp",
             "src/gui/audiowaveform.h",
             "src/util/featureKNN.cpp",

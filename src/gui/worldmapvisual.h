@@ -2,7 +2,7 @@
 #define WORLDMAPVISUAL_H
 
 #include "ofMain.h"
-#include "mapfileparser.h"
+#include "util/mapfileparser.h"
 
 class WorldMapVisual
 {
