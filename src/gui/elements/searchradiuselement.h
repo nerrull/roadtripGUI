@@ -10,6 +10,8 @@ public:
     }
 
     void draw(){
+        ofSetLineWidth(2);
+
        ofPushMatrix();
        ofTranslate(xOffset, yOffset);
        drawName();
@@ -18,12 +20,24 @@ public:
        ofSetColor(255);
        ofNoFill();
        ofDrawCircle(0,0, currentRadius);
+       string number = std::to_string(this->num_neighbours);
+       float w = font.stringWidth(number);
+       float h = font.stringHeight(number);
+
+       font.drawString(number,-w/2,h/2);
+
        ofPopMatrix();
+
+
 
     }
 
     void setValue(float v){
         this->incrementValue =v * this->circleOuterRadius;
+    }
+
+    void setValue(int v){
+        this->num_neighbours =v;
     }
 
     void update(){
@@ -34,6 +48,7 @@ public:
     float currentRadius= 0.;
     float incrementValue = 1.;
     float minRadius = 8.;
+    int num_neighbours = 1;
 
 };
 

@@ -4,6 +4,7 @@
 
 //========================================================================
 int main( ){
+
     Settings::get().load("settings.json");
     ofGLFWWindowSettings settings;
     settings.setSize(1920,1080);

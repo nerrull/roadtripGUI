@@ -65,19 +65,21 @@ public:
     vector<int> getSearchResultIndexes();
 
     void setPlayingIndex(int);
+    void setMinVideos(int);
+    void setNumVideos(int);
+
     int curveIterCount = 0;
 
     int num_points;
     int playingIndex =0;
     int targetNumberOfPoints = 50;
-    int minVideos = 5;
-    float threshold_distance = 0.01;
+    int minVideos = 1;
+    int numVideos = -1;
+
+    float threshold_distance = 0.05;
 
 
     vector<int> active_indexes;
-
-    float search_radius;
-    float max_search_radius;
     vector<ConnectionGraph> featureConnectionGraphs;
     vector<NodeConnection> getConnectionsForFeature(int featureIndex);
     void initPoints();

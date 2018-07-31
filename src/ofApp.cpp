@@ -11,6 +11,9 @@ template <typename T> int sgn(T val) {
 void ofApp::setup(){
     ofGetWindowPtr()->setVerticalSync(true);
     ofSetVerticalSync(true);
+    ofEnableAntiAliasing();
+    ofEnableSmoothing();
+
     ofSetDrawBitmapMode(OF_BITMAPMODE_MODEL);
     ofEnableAlphaBlending();
     ofEnableDepthTest();
@@ -345,7 +348,7 @@ void ofApp::update(){
         int speed = SPEEDS[speedSetting];
         if (speed == -1) speed = playingFileDuration;
 
-        featureGuiElements[0]->setValue(1000./60./speed);
+        featureGuiElements[0]->setValue(float(1000./60./speed));
 
     }
 
@@ -582,15 +585,15 @@ void ofApp::updatePlayingVideo(string video){
 }
 
 void ofApp::incrementSpeed(int step){
-    speedSetting=  CLAMP(speedSetting+step, 0, 8);
+    speedSetting=  CLAMP(speedSetting-step, 0, 18);
     speedChanged =true;
 }
 
 void ofApp::incrementSearchRadius(int step){
-    float step_norm = float(step)/20.;
-    float search_radius=  CLAMP(this->fKNN.threshold_distance+step, 0., 1.);
-    this->fKNN.updateSearchRadius(search_radius);
-        this->featureGuiElements[1]->setValue(search_radius);
+
+    int nv=  CLAMP(this->fKNN.numVideos+step, 1, 50);
+    this->fKNN.setNumVideos(nv);
+    this->featureGuiElements[1]->setValue(nv);
 }
 
 void ofApp::setSpeed(int value){
@@ -643,7 +646,7 @@ void ofApp::updateOSC() {
             playingFileDuration = m.getArgAsInt64(1);
 
             if (this->speedSetting ==0){
-               featureGuiElements[0]->setValue(1000./60./playingFileDuration);
+               featureGuiElements[0]->setValue(float(1000./60./playingFileDuration));
             }
             featureGuiElements[0]->reset();
 
@@ -803,6 +806,7 @@ void ofApp::handleButtonInput(int index){
 //        setSpeed(0);
 //        return;
         //Set number of neighbours to something else
+        return;
     }
 
     index =index-3;

@@ -22,6 +22,8 @@ public:
     virtual void setSize(int w, int h);
     virtual void setWeight(float w){currentWeight = w;}
     virtual void setValue(float v){currentValue = v;}
+    virtual void setValue(int v){currentValue = v;}
+
     virtual void setTarget(float v){targetValue = v;}
     virtual void setActive(bool v){active = v;}
 

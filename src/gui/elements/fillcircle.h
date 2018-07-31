@@ -12,6 +12,8 @@ public:
     }
 
     void draw(){
+        ofSetLineWidth(2);
+
        ofPushMatrix();
        ofTranslate(xOffset, yOffset);
        drawName();

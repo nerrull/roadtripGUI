@@ -225,7 +225,14 @@ void FeatureKNN::update(){
     ofLogNotice() <<"Point cloud tree search does nothing on update?"<<endl;
 }
 
+void FeatureKNN::setMinVideos(int min){
+    this->minVideos = min;
+}
 
+
+void FeatureKNN::setNumVideos(int n){
+    this->numVideos = n;
+}
 vector<vector<float>> FeatureKNN::getPointFeatureDistances(const vector<float> search_point, const vector<float> index_weights){
 
     int num_features = db->feature_values[0].size();
@@ -261,8 +268,17 @@ vector<vector<float>> FeatureKNN::getPointFeatureDistances(const vector<float> s
 
 vector<int> FeatureKNN::getSearchResultIndexes(){
     active_indexes.clear();
+
+    if (numVideos !=-1){
+        for (int i = 0; i<numVideos; i++){
+            float v = search_dists[i];
+            active_indexes.push_back(search_indexes[i]);
+        }
+        return active_indexes;
+    }
+
     int n_v =0;
-    for (std::size_t i = 0; i < search_indexes.size(); ++i)
+    for (std::size_t i = 0; i < search_indexes.size(); i++)
     {
         float v = search_dists[i];
         active_indexes.push_back(search_indexes[i]);

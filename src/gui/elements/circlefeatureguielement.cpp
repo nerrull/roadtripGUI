@@ -98,6 +98,8 @@ void CircleFeatureGuiElement::drawName(){
 
 void CircleFeatureGuiElement::draw(){
     ofPushMatrix();
+    ofSetLineWidth(2);
+
     ofTranslate(xOffset, yOffset);
     drawName();
 
@@ -133,7 +135,7 @@ void CircleFeatureGuiElement::draw(){
 
     for(int i =0; i< current_rot; i++ ){
         ofRotateDeg(1);
-        ofDrawLine(0,circleInteriorRadius+2,0,circleOuterRadius-2);
+        ofDrawLine(0,circleInteriorRadius+3,0,circleOuterRadius-3);
     }
     ofPopMatrix();
 
