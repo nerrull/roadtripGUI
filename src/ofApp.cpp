@@ -42,9 +42,7 @@ void ofApp::setup(){
     search_timer =ofGetElapsedTimeMillis();
 
     databaseLoader.loadHDF5Data(db_path);
-//    worldMap.setVideoPoints(databaseLoader.getCoordinates());
     fKNN.init(&databaseLoader);
-//    pointCloudRender.initPoints(fKNN.num_points, databaseLoader.colors);
     pointCloudRender.initPoints(databaseLoader.dimension_reduction, databaseLoader.colors);
 
 
@@ -177,7 +175,6 @@ void ofApp::setLayout(){
     float rem =1.-div;
 
     imageManager->setLayout(div*windowWidth, 0, rem*windowWidth, 3*windowHeight/4);
-//    worldMap.setLayout(0, windowHeight/4, div*windowWidth, 2* windowHeight/4);
     pointCloudRender.setLayout(0, windowHeight/4, div*windowWidth, 2* windowHeight/4);
     waveform.setLayout(0,0, div*windowWidth, windowHeight/4 );
 
@@ -400,18 +397,10 @@ void ofApp::draw(){
     int windowHeight=ofGetHeight();
 
     waveform.draw();
-
-    //colourInspector.draw();
-    //pointCloudTree->draw();
-//    worldMap.draw();
     pointCloudRender.draw();
     imageManager->draw();
 
-    //drawColors();
-
     drawControls(windowWidth, windowHeight);
-
-
 }
 
 //Draw control gui elements
@@ -517,7 +506,6 @@ void ofApp::keyPressed(int key){
     }
 }
 
-
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
     audioToggle = !audioToggle;
@@ -581,7 +569,6 @@ void ofApp::updatePlayingVideo(string video){
     }
     fKNN.setPlayingIndex(databaseLoader.getVideoIndexFromName(currentPlayingVideo));
     pointCloudRender.setPlayingNode(databaseLoader.getVideoIndexFromName(currentPlayingVideo));
-
 }
 
 void ofApp::incrementSpeed(int step){
@@ -604,7 +591,6 @@ void ofApp::setSpeed(int value){
 void ofApp::incrementFeatureTarget(int index, float step){
 
     targetFeatureValues[index] =CLAMP(targetFeatureValues[index]+step, 0., 1.);
-
     updateActiveFeature(index);
 
 }
@@ -630,6 +616,7 @@ void ofApp::updateActiveFeature(int index){
         if (i ==index )continue;
         inactiveCounter[i] = featureTimeout;
     }
+
 }
 
 
@@ -655,11 +642,10 @@ void ofApp::updateOSC() {
         {
             ofLogVerbose()<<  m.getAddress();
         }
-
     }
+
     //Uncomment this when using controller simulator
     //handlePythonMessages();
-
     while( coms.receiver_controller.hasWaitingMessages() )
     {
         incomingControllerMessageCounter++;

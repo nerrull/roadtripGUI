@@ -5,7 +5,6 @@
 #include "gui/imagemanager.h"
 #include "gui/segnetcolourinspector.h"
 #include "gui/audiowaveform.h"
-#include "gui/worldmapvisual.h"
 #include "gui/pointcloudrenderer.h"
 #include "util/featureKNN.h"
 #include "util/databaseloader.h"
@@ -76,8 +75,6 @@ public:
     DatabaseLoader databaseLoader;
     FeatureKNN fKNN;
     PointCloudRenderer pointCloudRender;
-    WorldMapVisual worldMap;
-
     vector<unique_ptr<CircleFeatureGuiElement>> featureGuiElements;
 
     CommunicationManager coms;
@@ -114,8 +111,6 @@ public:
     vector<string> featureNamesFr;
     vector<string> featureNames;
     string durationName, neighbourName;
-
-
 
     bool input_activity = false;
     bool audioToggle;

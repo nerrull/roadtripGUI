@@ -14,8 +14,6 @@ Project{
         files: [
             "src/gui/pointcloudrenderer.cpp",
             "src/gui/pointcloudrenderer.h",
-            "src/gui/worldmapvisual.cpp",
-            "src/gui/worldmapvisual.h",
             "src/util/communication.h",
             "src/util/databaseloader.cpp",
             "src/util/databaseloader.h",
@@ -40,10 +38,6 @@ Project{
             "src/gui/elements/fillcircle.h",
             "src/gui/elements/searchradiuselement.h",
             "src/gui/elements/uielements.h",
-
-
-
-
             "src/main.cpp",
             "src/ofApp.cpp",
             "src/ofApp.h",
