@@ -149,8 +149,8 @@ void PointCloudRenderer::draw()
 
     cam.begin(viewMain);
     ofPushMatrix();
-    ofRotateZDeg(0.0573*drawCount);
-    ofRotateXDeg(0.137*drawCount);
+    ofRotateZDeg(90.);
+//    ofRotateXDeg(0.137*drawCount);
 
 
     ofNoFill();
@@ -178,7 +178,10 @@ void PointCloudRenderer::draw()
 //    ofDrawIcoSphere(visualization_points[playingIndex], 1.);
     ofSetColor(255);
 //    line.draw();
+    ofSetLineWidth(2.);
     p_line.draw();
+    ofSetLineWidth(1.);
+
 //    connectionMesh.draw();
     ofPopMatrix();
     //    nodeParticles.draw();

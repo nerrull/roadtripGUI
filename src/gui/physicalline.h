@@ -17,16 +17,17 @@ public:
     }
     void update(ofVec3f targetPoint){
         //friction
-        currentVelocity *= 0.98;
+        currentVelocity *= 0.9;
         currentPosition += currentVelocity;
         currentVelocity += attract(targetPoint, currentPosition, 10.);
 
         addPoint(currentPosition);
-        if (pointQueue.size()>400){
+        if (pointQueue.size()>120){
             dropPoint();
         }
 
         line.clear();
+
         for (auto p:pointQueue){
             line.curveTo(p);
         }
@@ -55,12 +56,12 @@ private:
         float dist  = target.distance(point);
         ofVec3f direction = (point - target).getNormalized();
         float force = 10.;
-        if (dist >100.){
-            force =10.;
+        if (dist >=50.){
+            force =1.;
         }
 
-        else if (dist <100. && dist >50.){
-            force = gravity/dist;
+        else if (dist <50. && dist >2.){
+            force = 0.5;
         }
         else {
             currentVelocity = currentVelocity.normalize();
