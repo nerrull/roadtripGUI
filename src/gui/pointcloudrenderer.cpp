@@ -39,7 +39,9 @@ void PointCloudRenderer::setPlayingNode(int index){
     playedPoints.push_back(visualization_points[index]);
 }
 
-
+void PointCloudRenderer::setRotation(bool on){
+    rotationOn = on;
+}
 void PointCloudRenderer::initPoints(vector<ofVec3f> points, vector<ofColor>c){
     mesh.clear();
     point_steps.clear();
@@ -51,9 +53,14 @@ void PointCloudRenderer::initPoints(vector<ofVec3f> points, vector<ofColor>c){
     for (auto p :points)
     {
         ofVec3f point = p*100;
+
+        //Stretch out horizontal dimension
+        point.y *=2.;
+
         mesh.addVertex(point);
         mesh.addColor(colors[index]);
         point_steps.push_back(ofVec3f(0.,0.,0.));
+
         visualization_points.push_back(point);
         index++;
     }
@@ -103,8 +110,7 @@ void PointCloudRenderer::update(){
         playedPoints.pop_front();
     }
     nodeParticles.update();
-
-    p_line.update(visualization_points[playingIndex]);
+    c_line.update(visualization_points[playingIndex]);
 
 
     if (playedPoints.size() >1){
@@ -150,7 +156,11 @@ void PointCloudRenderer::draw()
     cam.begin(viewMain);
     ofPushMatrix();
     ofRotateZDeg(90.);
-//    ofRotateXDeg(0.137*drawCount);
+
+    if (rotationOn){
+        ofRotateXDeg(0.0137*drawCount);
+        ofRotateYDeg(0.0269*drawCount);
+    }
 
 
     ofNoFill();
@@ -179,7 +189,8 @@ void PointCloudRenderer::draw()
     ofSetColor(255);
 //    line.draw();
     ofSetLineWidth(2.);
-    p_line.draw();
+//    p_line.draw();
+    c_line.draw();
     ofSetLineWidth(1.);
 
 //    connectionMesh.draw();

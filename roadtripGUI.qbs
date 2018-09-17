@@ -12,6 +12,7 @@ Project{
         name: { return FileInfo.baseName(path) }
 
         files: [
+            "src/gui/curveline.h",
             "src/gui/physicalline.h",
             "src/gui/pointcloudrenderer.cpp",
             "src/gui/pointcloudrenderer.h",

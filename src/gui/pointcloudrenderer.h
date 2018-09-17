@@ -5,6 +5,8 @@
 #include "util/featureKNN.h"
 #include "gui/nodeparticlemanager.h"
 #include "gui/physicalline.h"
+#include "gui/curveline.h"
+
 class PointCloudRenderer
 {
 public:
@@ -15,6 +17,7 @@ public:
     void updatePoints();
     void initPoints(int nPoints, vector<ofColor> c);
     void initPoints(vector<ofVec3f> points, vector<ofColor>c);
+    void setRotation(bool);
 
 
     void setLayout(int x, int y, int w, int h);
@@ -29,7 +32,7 @@ public:
 
     ofPolyline line;
     ofPolyline twineLine;
-    PhysicalLine p_line;
+    CurveLine c_line;
 
     ofMesh playedLine;
     ofEasyCam cam;
@@ -38,6 +41,7 @@ public:
     ofVboMesh mesh;
     ofMesh nextMesh;
 
+    bool rotationOn;
     int drawCount =0;
     int point_step;
     int MAX_STEPS =30;

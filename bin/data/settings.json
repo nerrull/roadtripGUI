@@ -1,12 +1,13 @@
 {
+    "db_path": "/media/rice1902/OuterSpace2/dataStore/database.h5",
+    "frames_path":"/media/rice1902/OuterSpace2/dataStore/IMAGE/frames_480",
+    "segnet_path":"/media/rice1902/OuterSpace2/dataStore/IMAGE/segnet",
     "monitor_index": 0,
-    "db_path": "/home/nuc/Documents/dataStore/database.h5",
     "audio_device_id": 7,
-    "frames_path":"/home/nuc/Documents/dataStore/IMAGE/frames_480",
-    "segnet_path":"/home/nuc/Documents/dataStore/IMAGE/segnet",
     "windowed":false,
     "dev_mode":true,
     "english":false,
     "feature_timeout":1000,
-    "feature_decay_sec":1.
+    "feature_decay_sec":1.,
+    "point_mode":1 //0 for 2D, 1 for 3D
 }
