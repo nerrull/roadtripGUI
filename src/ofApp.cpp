@@ -295,7 +295,6 @@ void ofApp::update(){
         }
     }
 
-
     //Update active features
     for (int i = 0; i <featureWeights.size(); i++)
     {
@@ -504,6 +503,10 @@ void ofApp::keyPressed(int key){
     if (key =='l'){
         toggleLanguage();
     }
+
+    if (key =='r'){
+        playRandomVideo();
+    }
 }
 
 //--------------------------------------------------------------
@@ -557,11 +560,30 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 
 }
 
+void ofApp::playRandomVideo(){
+    currentPlayingVideo = databaseLoader.getRandomVideo();
+
+    imageManager->loadImages(currentPlayingVideo);
+    lastFeatureValues = featureValues;
+    featureValues = databaseLoader.getFeaturesFromName(currentPlayingVideo);
+    coms.publishVideoNow( currentPlayingVideo, true);
+
+    for (int i =0; i <featureValues.size(); i++){
+        if (!featureActive[i]){
+            targetFeatureValues[i] = featureValues[i];
+        }
+    }
+    fKNN.setPlayingIndex(databaseLoader.getVideoIndexFromName(currentPlayingVideo));
+    pointCloudRender.setPlayingNode(databaseLoader.getVideoIndexFromName(currentPlayingVideo));
+
+}
+
 void ofApp::updatePlayingVideo(string video){
     currentPlayingVideo = video;
     imageManager->loadImages(currentPlayingVideo);
     lastFeatureValues = featureValues;
     featureValues = databaseLoader.getFeaturesFromName(currentPlayingVideo);
+
     for (int i =0; i <featureValues.size(); i++){
         if (!featureActive[i]){
             targetFeatureValues[i] = featureValues[i];

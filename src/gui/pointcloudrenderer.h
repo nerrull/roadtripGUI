@@ -4,6 +4,7 @@
 #include "ofMain.h"
 #include "util/featureKNN.h"
 #include "gui/nodeparticlemanager.h"
+#include "gui/physicalline.h"
 class PointCloudRenderer
 {
 public:
@@ -28,6 +29,7 @@ public:
 
     ofPolyline line;
     ofPolyline twineLine;
+    PhysicalLine p_line;
 
     ofMesh playedLine;
     ofEasyCam cam;
@@ -53,6 +55,8 @@ public:
     //Active points
     vector<int> draw_indexes;
     deque<ofVec3f> playedPoints;
+
+    ofPolyline trail;
 
     NodeParticleManager nodeParticles;
 };

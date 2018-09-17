@@ -14,6 +14,11 @@ public:
     const vector<vector<float>>* getFeatures();
     int getNumFeatures(){return num_features;}
 
+    string getRandomVideo(){
+        int randIndex = (int) ofRandom(0,video_names.size());
+        return video_names[randIndex];
+    }
+
     vector<string>  getFeatureNames();
     vector<string>  getVideoNames();
     vector<string>  getVideoNamesFromIndexes(vector<int> index);

@@ -47,6 +47,8 @@ public:
 
     bool vectorsAreEqual(vector<string>v1, vector<string> v2);
     void toggleLanguage();
+    void playRandomVideo();
+
 
 
     //Default functions

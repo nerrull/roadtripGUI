@@ -104,6 +104,8 @@ void PointCloudRenderer::update(){
     }
     nodeParticles.update();
 
+    p_line.update(visualization_points[playingIndex]);
+
 
     if (playedPoints.size() >1){
         line.clear();
@@ -175,7 +177,8 @@ void PointCloudRenderer::draw()
 //    ofSetColor(255, 0, 0);
 //    ofDrawIcoSphere(visualization_points[playingIndex], 1.);
     ofSetColor(255);
-    line.draw();
+//    line.draw();
+    p_line.draw();
 //    connectionMesh.draw();
     ofPopMatrix();
     //    nodeParticles.draw();
