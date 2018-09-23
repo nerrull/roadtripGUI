@@ -35,8 +35,8 @@ CircleFeatureGuiElement::CircleFeatureGuiElement(int w, int h, int x, int y)
 
 void CircleFeatureGuiElement::setRange(int range){
     range = CLAMP(range, 0, 360);
-    this->rotationRange =range;
-    int diff = 360 - this->rotationRange;
+    this->rotationRange =range-5;
+    int diff = 360 - range;
     this->rotationMin = diff/2;
     this->rotationMax = 360-diff/2;
 
@@ -148,7 +148,6 @@ void CircleFeatureGuiElement::draw(){
     //Draw interior circle
     ofSetColor(255);
     interiorPath.draw();
-
 
     //Draw weight circle
     ofFill();

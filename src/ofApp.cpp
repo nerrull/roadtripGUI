@@ -13,7 +13,6 @@ void ofApp::setup(){
     ofSetVerticalSync(true);
     ofEnableAntiAliasing();
     ofEnableSmoothing();
-
     ofSetDrawBitmapMode(OF_BITMAPMODE_MODEL);
     ofEnableAlphaBlending();
     ofEnableDepthTest();
@@ -126,10 +125,10 @@ void ofApp::initNames(){
     featureNamesFr.push_back("Largeur\nde bande");
     featureNamesFr.push_back("Vitesse");
     featureNamesFr.push_back("Instabilité");
-    featureNamesFr.push_back("RPM Moteur");
+    featureNamesFr.push_back("Régime Moteur");
     featureNamesFr.push_back("T° extérieur");
     featureNamesFr.push_back("Inclinaison");
-    featureNamesFr.push_back("Teinte?");
+    featureNamesFr.push_back("Teinte");
     featureNamesFr.push_back("Luminosité");
     featureNamesFr.push_back("Incertitude");
     featureNamesFr.push_back("Bâtiment");
@@ -218,12 +217,14 @@ void ofApp::setLayout(){
     for (int i=0; i<featureGuiElements.size(); i++){
         y = windowHeight - controlSectionHeight;
         if (i%2 ==0){
-            featureGuiElements[i]->setTextOnTop(true);
+            featureGuiElements[i]->setTextOnTop(false);
             featureGuiElements[i]->setCircleOffset(firstRowOffset);
         }
         else{
             y +=secondRowOffset;
             featureGuiElements[i]->setTextOnTop(false);
+            featureGuiElements[i]->setCircleOffset(firstRowOffset);
+
         }
 
         featureGuiElements[i]->setPosition(x,y);
