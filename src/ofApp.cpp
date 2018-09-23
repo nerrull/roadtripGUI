@@ -44,12 +44,13 @@ void ofApp::setup(){
     databaseLoader.loadHDF5Data(db_path);
     fKNN.init(&databaseLoader);
     if (Settings::getInt("point_mode") ==0){
+        pointCloudRender.setRotation(false);
         pointCloudRender.initPoints(databaseLoader.dimension_reduction_2D, databaseLoader.colors);
     }
 
     else if (Settings::getInt("point_mode") ==1){
-        pointCloudRender.initPoints(databaseLoader.dimension_reduction, databaseLoader.colors);
         pointCloudRender.setRotation(true);
+        pointCloudRender.initPoints(databaseLoader.dimension_reduction, databaseLoader.colors);
     }
 
 

@@ -54,8 +54,8 @@ void PointCloudRenderer::initPoints(vector<ofVec3f> points, vector<ofColor>c){
     {
         ofVec3f point = p*100;
 
-        //Stretch out horizontal dimension
-        point.y *=2.;
+        //Stretch out horizontal dimension if we're in 2D
+        if (!rotationOn) point.y *=2.;
 
         mesh.addVertex(point);
         mesh.addColor(colors[index]);
