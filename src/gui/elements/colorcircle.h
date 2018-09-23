@@ -11,8 +11,10 @@ public:
 
     void draw();
     void setValue(float);
+    void setColorLimits(float, float);
 
     ofColor currentColor;
+    float minColor, maxColor;
 
 };
 

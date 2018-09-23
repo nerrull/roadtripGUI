@@ -10,6 +10,7 @@
 #include "util/databaseloader.h"
 #include "util/communication.h"
 #include "gui/elements/uielements.h"
+#include "util/behaviour.h"
 
 #define NUM_MSG_STRINGS 20
 
@@ -77,6 +78,8 @@ public:
     DatabaseLoader databaseLoader;
     FeatureKNN fKNN;
     PointCloudRenderer pointCloudRender;
+    Behaviour behaviour;
+
     vector<unique_ptr<CircleFeatureGuiElement>> featureGuiElements;
 
     CommunicationManager coms;

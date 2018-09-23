@@ -63,7 +63,6 @@ void ofApp::setup(){
     inactiveCounter.resize(num_features,0);
     targetFeatureValues.resize(num_features, 0.);
     featureActive.resize(num_features, false);
-
     featureGuiElements.resize(num_features+2);
     featureGuiElements[0] = make_unique<FillCircle>();
     featureGuiElements[1] = make_unique<SearchRadiusElement>();
@@ -71,8 +70,11 @@ void ofApp::setup(){
     for (int i =2; i<featureGuiElements.size(); i++){
         featureGuiElements[i]= make_unique<CircleFeatureGuiElement>();
     }
+
     //Init custom gui elements (hue)
     featureGuiElements[11] = make_unique<ColorCircle>();
+    dynamic_cast<ColorCircle*>(featureGuiElements[11].get())->setColorLimits(databaseLoader.color_min_max.first, databaseLoader.color_min_max.second);
+
     speedSetting =0;
     activityTimer =0;
 
@@ -92,12 +94,9 @@ void ofApp::setup(){
 }
 
 void ofApp::initNames(){
-
-
     featureNamesEn.push_back("Loudness");
     featureNamesEn.push_back("Spectral\nCentroid");
     featureNamesEn.push_back("Percussiveness");
-//    featureNamesEn.push_back("Pitched");
     featureNamesEn.push_back("Bandwidth");
     featureNamesEn.push_back("Vehicle speed");
     featureNamesEn.push_back("Instability");
@@ -121,7 +120,6 @@ void ofApp::initNames(){
     featureNamesFr.push_back("Volume");
     featureNamesFr.push_back("Centroïde\nSpectral");
     featureNamesFr.push_back("Percussif");
-//    featureNamesFr.push_back("Hauteur?");
     featureNamesFr.push_back("Largeur\nde bande");
     featureNamesFr.push_back("Vitesse");
     featureNamesFr.push_back("Instabilité");
@@ -141,20 +139,16 @@ void ofApp::initNames(){
     featureNamesFr.push_back("Clôture/Pôteau");
     featureNamesFr.push_back("Piéton/Vélo");
 
-
     languageIsEnglish = Settings::getBool("english");
     if (languageIsEnglish) {
         durationName= "Duration";
         neighbourName= "Neigbours";
-
         featureNames = featureNamesEn;
     }
     else {
         durationName= "Durée";
         neighbourName = "Voisins";
-
         featureNames = featureNamesFr;
-
     }
 }
 
@@ -178,7 +172,6 @@ void ofApp::setLayout(){
 
     //Set widget layouts
     float div = 14./23.;
-
     float rem =1.-div;
 
     imageManager->setLayout(div*windowWidth, 0, rem*windowWidth, 3*windowHeight/4);
@@ -224,7 +217,6 @@ void ofApp::setLayout(){
             y +=secondRowOffset;
             featureGuiElements[i]->setTextOnTop(false);
             featureGuiElements[i]->setCircleOffset(firstRowOffset);
-
         }
 
         featureGuiElements[i]->setPosition(x,y);
@@ -232,7 +224,6 @@ void ofApp::setLayout(){
 
         if (i>=2){
             featureGuiElements[i]->setName(featureNames[i-2]);
-
         }
         x+=knobWidth;
     }
@@ -244,6 +235,7 @@ void ofApp::setLayout(){
 //--------------------------------------------------------------
 void ofApp::update(){
     updateOSC();
+    behaviour.update(input_activity);
     if (DEV_MODE){
         handlePythonMessages();
     }
@@ -262,40 +254,22 @@ void ofApp::update(){
     pointCloudRender.update();
     pointCloudRender.meshFromConnections(fKNN.getConnectionsForFeature(lastActiveFeatureIndex));
 
+    //Every 100 ms
     if ((currentTime - search_timer)>100)
     {
-//        pointCloudRender.updatePointPositions(fKNN.getPointFeatureDistances(targetFeatureValues, featureWeights), featureWeights);
         fKNN.getKNN(targetFeatureValues, featureWeights);
-
-
         search_timer =currentTime;
         videoIndexes = fKNN.getSearchResultIndexes();
         pointCloudRender.setActiveNodes(videoIndexes);
-        //DEBUG MODE
-//        fKNN.setPlayingIndex(videoIndexes[0]);
-//        pointCloudRender.playingIndex = videoIndexes[0];
 
-        std::ostringstream oss;
-        if (!videoIndexes.empty())
-        {
-            // Convert all but the last element to avoid a trailing ","
-            std::copy(videoIndexes.begin(), videoIndexes.end()-1,
-                      std::ostream_iterator<int>(oss, ","));
-
-            // Now add the last element with no delimiter
-            oss << videoIndexes.back();
-        }
-
-        //std::cout << oss.str() << std::endl;
-        vector<string> videoNames = databaseLoader.getVideoNamesFromIndexes(fKNN.getSearchResultIndexes());
-        if (input_activity){
+        vector<string> videoNames = databaseLoader.getVideoNamesFromIndexes(videoIndexes);
+        if (behaviour.state == Behaviour::HUMAN_ACTIVE){
             if (currentPlayingVideo != videoNames[0]){
                 coms.publishVideoNow( videoNames[0], true);
                 currentPlayingVideo = videoNames[0];
                 lastVideos.clear();
                 lastVideos.push_back(videoNames[0]);
             }
-            input_activity= false;
         }
 
         else if (!vectorsAreEqual(videoNames, lastVideos) && videoNames.size()>0){
@@ -313,18 +287,14 @@ void ofApp::update(){
 
         //After 5 seconds of inactivity decrement the weight by 0.1 every 0.5 seconds
         if (inactiveCounter[i]>featureTimeout && featureWeights[i] >0){
-            //            if ((inactiveCounter[i] %30) ==0){
             featureWeights[i] = CLAMP(featureWeights[i] - featureDecayRate, 0., 1.);
             desireChanged=true;
-//            featureActive[i]=false;
-            //            }
         }
 
         else if (inactiveCounter[i]>featureTimeout && featureWeights[i] ==0.){
             featureActive[i]=false;
             continue;
         }
-
     }
 
     //If no activity go to low volume low playback speed
@@ -338,12 +308,10 @@ void ofApp::update(){
         totalWeight = std::accumulate(featureWeights.begin()+1, featureWeights.end(), 0.);
         featureWeights[0] = 1-totalWeight;
 
-
         //Decrement speed while inactive
-
-//        if (speedSetting >0 && inactiveCounter[0] > 300 &&inactiveCounter[0] %60 ==0){
-//            setSpeed(speedSetting -1);
-//        }
+        //if (speedSetting >0 && inactiveCounter[0] > 300 &&inactiveCounter[0] %60 ==0){
+        //    setSpeed(speedSetting -1);
+        //}
     }
 
     //Do coms stuff
@@ -352,9 +320,7 @@ void ofApp::update(){
         speedChanged = false;
         int speed = SPEEDS[speedSetting];
         if (speed == -1) speed = playingFileDuration;
-
         featureGuiElements[0]->setValue(float(1000./60./speed));
-
     }
 
     for (int i = 0; i <featureWeights.size(); i++)
@@ -368,7 +334,6 @@ void ofApp::update(){
     featureGuiElements[0]->update(); //Update speed timer
     featureGuiElements[1]->update(); //Update search radius
 
-
     for (int i = 0; i <featureWeights.size(); i++){
 
         //Do some interpolation on the value
@@ -380,12 +345,11 @@ void ofApp::update(){
         featureGuiElements[i+2]->setValue(lastFeatureValues[i]);
         featureGuiElements[i+2]->setTarget(targetFeatureValues[i]);
         featureGuiElements[i+2]->setActive(featureActive[i]);
-
     }
 
-
-    //Upekep for next loop
+    //Update last weights for next loop
     lastFeatureWeights = featureWeights;
+    input_activity=false;
 
 }
 
@@ -409,6 +373,7 @@ void ofApp::draw(){
     imageManager->draw();
 
     drawControls(windowWidth, windowHeight);
+    drawColors();
 }
 
 //Draw control gui elements
@@ -420,80 +385,20 @@ void ofApp::drawControls(int windowWidth, int windowHeight){
     }
 }
 
-float ofApp::getColorValue(string id){
-    auto it= find(featureNames.begin(), featureNames.end(), id);
-    if(it < featureNames.end()) {
-        auto index = std::distance(featureNames.begin(), it);
-        return featureValues[index];
-    }
-    else return -1.;
-}
-
 void ofApp::drawColors(){
 
-    float h,s,v, h_m,s_m,v_m;
-
-    h = getColorValue("h");
-    s = getColorValue("s");
-    v = getColorValue("v");
-    h_m = getColorValue("h_m");
-    s_m = getColorValue("s_m");
-    v_m = getColorValue("v_m");
+    ofColor c = databaseLoader.colors[databaseLoader.getVideoIndexFromName(currentPlayingVideo)];
 
     int windowWidth = ofGetWidth();
     ofPushMatrix();
     ofTranslate(5*windowWidth/6, 20);
     int boxWidth = windowWidth/6;
 
-    ofColor c1, c2,c3,c4,c5;
-    c1 = ofColor(0);
-    c2 = ofColor(0);
-    c3 = ofColor(0);
-    c4 = ofColor(0);
-    c5 = ofColor(0);
 
-    if (h!=-1. && s!=-1. && v!=-1.){
-        c1 = c1.fromHsb(h*255, v*255, v*255);
-    }
-    if (h_m!=-1. && s_m!=-1. && v_m!=-1.){
-        c2 = c2.fromHsb(h_m*255, s_m*255, v_m*255);
-    }
-    if (h_m!=-1.){
-        c3 =c3.fromHsb(h_m*255, 255, 255);
-    }
-    if (s_m!=-1.){
-        c4 = ofColor(s_m*255);
-    }
-    if (v_m!=-1.){
-        c5 = ofColor(v_m*255);
-    }
-
-    ofSetColor(c1);
+    ofSetColor(c);
     ofDrawRectangle(0,0, boxWidth/2, boxWidth/2);
     ofSetColor(255);
     font.drawString("Palette",0,20);
-
-    ofSetColor(c2);
-    ofDrawRectangle(boxWidth/2,0, boxWidth/2, boxWidth/2);
-    ofSetColor(255);
-    font.drawString("Moyenne",boxWidth/2,20);
-
-
-    ofSetColor(c3);
-    ofDrawRectangle(0,boxWidth/2, boxWidth/3, boxWidth/3);
-    ofSetColor(255);
-    font.drawString("H_m",0,boxWidth/2+20);
-
-
-    ofSetColor(c4);
-    ofDrawRectangle(boxWidth/3,boxWidth/2, boxWidth/3, boxWidth/3);
-    ofSetColor(255);
-    font.drawString("S_m",boxWidth/3,boxWidth/2+20);
-
-    ofSetColor(c5);
-    ofDrawRectangle(2*boxWidth/3,boxWidth/2, boxWidth/3, boxWidth/3);
-    ofSetColor(255);
-    font.drawString("V_m",2*boxWidth/3,boxWidth/2+20);
 
     ofPopMatrix();
 }
@@ -518,56 +423,6 @@ void ofApp::keyPressed(int key){
     }
 }
 
-//--------------------------------------------------------------
-void ofApp::keyReleased(int key){
-    audioToggle = !audioToggle;
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseMoved(int x, int y ){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseDragged(int x, int y, int button){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mousePressed(int x, int y, int button){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseReleased(int x, int y, int button){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseEntered(int x, int y){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseExited(int x, int y){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::windowResized(int w, int h){
-    setLayout();
-
-}
-
-//--------------------------------------------------------------
-void ofApp::gotMessage(ofMessage msg){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){
-
-}
 
 void ofApp::playRandomVideo(){
     currentPlayingVideo = databaseLoader.getRandomVideo();
@@ -804,12 +659,9 @@ void ofApp::handleKnobInput(ofxOscMessage m){
 
 
     i =i-3;
-
     float step = (float(m.getArgAsInt(1)) -0.5)*2/50.;
     incrementFeatureTarget(i, step);
 }
-
-
 
 void ofApp::handleButtonInput(int index){
     //    ofLogDebug(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
@@ -820,9 +672,7 @@ void ofApp::handleButtonInput(int index){
     }
 
     if (index ==2){
-//        setSpeed(0);
-//        return;
-        //Set number of neighbours to something else
+        //Todo: Set number of neighbours to something else
         return;
     }
 
@@ -841,10 +691,57 @@ bool ofApp::vectorsAreEqual(vector<string>v1, vector<string> v2){
     return true;
 }
 
-
 void ofApp::audioIn(ofSoundBuffer & buffer){
-    if (audioToggle){
-        waveform.receiveBuffer(buffer);
-    }
+    waveform.receiveBuffer(buffer);
 }
 
+
+//--------------------------------------------------------------
+void ofApp::keyReleased(int key){
+}
+
+//--------------------------------------------------------------
+void ofApp::mouseMoved(int x, int y ){
+
+}
+
+//--------------------------------------------------------------
+void ofApp::mouseDragged(int x, int y, int button){
+
+}
+
+//--------------------------------------------------------------
+void ofApp::mousePressed(int x, int y, int button){
+
+}
+
+//--------------------------------------------------------------
+void ofApp::mouseReleased(int x, int y, int button){
+
+}
+
+//--------------------------------------------------------------
+void ofApp::mouseEntered(int x, int y){
+
+}
+
+//--------------------------------------------------------------
+void ofApp::mouseExited(int x, int y){
+
+}
+
+//--------------------------------------------------------------
+void ofApp::windowResized(int w, int h){
+    setLayout();
+
+}
+
+//--------------------------------------------------------------
+void ofApp::gotMessage(ofMessage msg){
+
+}
+
+//--------------------------------------------------------------
+void ofApp::dragEvent(ofDragInfo dragInfo){
+
+}

@@ -59,6 +59,14 @@ void DatabaseLoader::loadHDF5Data(string database_path){
         coordinates.push_back(coords);
     }
 
+    ofxHDF5DataSetPtr data_ptr= hdf5File.loadDataSet("color_limits");
+    int num_values = data_ptr->getDimensionSize(0);
+    float *color_extrema= new float[num_values];
+    data_ptr->read(color_extrema);
+    color_min_max.first = color_extrema[0];
+    color_min_max.second = color_extrema[1];
+
+
     ofxHDF5DataSetPtr dr_ptr= hdf5File.loadDataSet("dimension_reduction");
     int num_points = dr_ptr->getDimensionSize(0);
     int points_dim = dr_ptr->getDimensionSize(1);

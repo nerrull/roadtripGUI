@@ -7,7 +7,7 @@
     "windowed":false,
     "dev_mode":true,
     "english":false,
-    "feature_timeout":1000,
+    "feature_timeout":6000, //Seconds before feature starts to time out
     "feature_decay_sec":1.,
     "point_mode":1 //0 for 2D, 1 for 3D
 }

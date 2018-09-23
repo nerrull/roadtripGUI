@@ -3,6 +3,7 @@
 ColorCircle::ColorCircle()
 {
     setRange(270);
+    setColorLimits(0.,360.);
 }
 
 void ColorCircle::setValue(float v){
@@ -10,6 +11,10 @@ void ColorCircle::setValue(float v){
     currentValue = v;
 }
 
+void ColorCircle::setColorLimits(float min, float max){
+    minColor = min;
+    maxColor = max*255./360.;
+}
 void ColorCircle::draw(){
     //Move to draw position and draw name
     ofPushMatrix();
@@ -47,7 +52,7 @@ void ColorCircle::draw(){
     ofRotateDeg(3);
 
     for(int i =0; i<rotationRange; i++ ){
-        ofColor c = ofColor::fromHsb(float(i)/rotationRange*255,200,200);
+        ofColor c = ofColor::fromHsb(minColor + float(i) /rotationRange*(maxColor- minColor),200,200);
         ofSetColor(c);
         ofRotateDeg(1);
         ofDrawLine(0,circleInteriorRadius +3,0,circleOuterRadius-3);

@@ -36,6 +36,7 @@ public:
     vector<ofVec2f> coordinates;
     vector<ofVec3f> dimension_reduction;
     vector<ofVec3f> dimension_reduction_2D;
+    pair<float, float> color_min_max;
 
 
 

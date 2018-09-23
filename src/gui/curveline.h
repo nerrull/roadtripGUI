@@ -19,8 +19,11 @@ public:
 
         if (tp!= targetPoint){
             line.curveTo(tp,resolution);
+//            line.curveTo(tp +ofVec3f(0.001,0.001, 0.001),100);
             targetPoint = tp;
-            drawOffset = 100;
+            if (line.getVertices().size()>resolution){
+                drawOffset = resolution;
+            }
         }
 //        for (int i = 0; i<2; i++){
 //            pointAges.push_front(ofGetFrameNum());
@@ -31,7 +34,7 @@ public:
 
             if (drawOffset !=0){
                 drawLine.clear();
-                drawOffset = MAX(0,drawOffset -resolution/10 );
+                drawOffset = MAX(0,drawOffset - resolution/10 );
                 auto first = line.getVertices().begin();
                 auto last = line.getVertices().begin() +line.getVertices().size() - drawOffset;
                 vector<ofDefaultVertexType> newVec(first, last);
@@ -56,12 +59,17 @@ public:
     }
 
     void draw(){
-        if (drawOffset >0){
-            drawLine.draw();
-        }
-        else{
+        ofPushStyle();
+        ofSetColor(255,255,255,200);
+        ofSetLineWidth(1);
+//        if (drawOffset >0){
+//            drawLine.draw();
+//        }
+//        else{
             line.draw();
-        }
+//        }
+        ofPopStyle();
+
     }
 
 

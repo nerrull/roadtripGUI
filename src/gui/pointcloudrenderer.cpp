@@ -5,6 +5,7 @@ PointCloudRenderer::PointCloudRenderer()
     point_step = MAX_STEPS+1;
     playedLine.setMode(OF_PRIMITIVE_LINE_STRIP);
     connectionMesh.setMode(OF_PRIMITIVE_LINES);
+    playingPointMesh.setMode(OF_PRIMITIVE_POINTS);
 }
 
 
@@ -36,7 +37,9 @@ void PointCloudRenderer::setActiveNodes(vector<int> nodeIndexes){
 
 void PointCloudRenderer::setPlayingNode(int index){
     playingIndex = index;
-    playedPoints.push_back(visualization_points[index]);
+    playingPointMesh.clear();
+    playingPointMesh.addVertex(visualization_points[playingIndex]);
+    playingPointMesh.addColor(colors[playingIndex]);
 }
 
 void PointCloudRenderer::setRotation(bool on){
@@ -127,11 +130,9 @@ void PointCloudRenderer::update(){
     }
 }
 
-
 void PointCloudRenderer::updatePoints(){
 
     mesh.clear();
-
     for (std::size_t i = 0; i < visualization_points.size(); ++i)
     {
 
@@ -145,7 +146,6 @@ void PointCloudRenderer::updatePoints(){
     if (point_step<=MAX_STEPS){
         point_step++;
     }
-
 }
 
 
@@ -162,40 +162,25 @@ void PointCloudRenderer::draw()
         ofRotateYDeg(0.0269*drawCount);
     }
 
-
     ofNoFill();
     drawCount++;
+    //Draw line
+    c_line.draw();
 
     // Draw all of the points.
     ofSetColor(255,70);
-//    glPointSize(2);
+    glPointSize(3);
     mesh.draw();
 
     ofSetColor(255);
-//    glPointSize(1);
+    glPointSize(2);
     mesh.draw();
 
-    ofFill();
-    ofSetColor(255, 255, 0, 80);
-
-//    for (std::size_t i = 0; i < draw_indexes.size(); ++i)
-//    {
-//        ofDrawSphere(visualization_points[draw_indexes[i]], .5);
-//    }
-
-
-//    ofSetColor(255, 0, 0);
-//    ofDrawIcoSphere(visualization_points[playingIndex], 1.);
+    glPointSize(10);
     ofSetColor(255);
-//    line.draw();
-    ofSetLineWidth(2.);
-//    p_line.draw();
-    c_line.draw();
-    ofSetLineWidth(1.);
+    playingPointMesh.draw();
 
-//    connectionMesh.draw();
     ofPopMatrix();
-    //    nodeParticles.draw();
     cam.end();
 
 }
