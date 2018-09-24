@@ -6,12 +6,11 @@
 #include "gui/segnetcolourinspector.h"
 #include "gui/audiowaveform.h"
 #include "gui/pointcloudrenderer.h"
+#include "gui/elements/uielements.h"
 #include "util/featureKNN.h"
 #include "util/databaseloader.h"
 #include "util/communication.h"
-#include "gui/elements/uielements.h"
-#include "util/behaviour.h"
-
+#include "util/featurecontrol.h"
 #define NUM_MSG_STRINGS 20
 
 
@@ -37,7 +36,6 @@ public:
     void setSpeed(int value);
     void toggleFeatureTarget(int index);
     void incrementSpeed(int step);
-    void incrementFeatureTarget(int index, float step);
     void incrementSearchRadius(int step);
 
 
@@ -72,14 +70,13 @@ public:
 
 
     //GUI elements
-    ImageManager* imageManager;
+    ImageManager imageManager;
     SegnetColourInspector colourInspector;
     AudioWaveform waveform;
     DatabaseLoader databaseLoader;
     FeatureKNN fKNN;
     PointCloudRenderer pointCloudRender;
-    Behaviour behaviour;
-
+    FeatureControl fc;
     vector<unique_ptr<CircleFeatureGuiElement>> featureGuiElements;
 
     CommunicationManager coms;
@@ -97,34 +94,20 @@ public:
     int incomingPlayerMessageCounter;
     int incomingControllerMessageCounter;
 
-    int activityTimer;
     int playingFileDuration =1000;
-    int featureTimeout;
-    int lastActiveFeatureIndex;
-    float featureDecayRate;
-    vector<bool> featureActive;
-    vector<float> featureWeights;
-    vector<float> lastFeatureWeights;
-
-    vector<int> inactiveCounter;
-    vector<float> targetFeatureValues;
     vector<int> videoIndexes;
-
-    vector<float>featureValues;
-    vector<float>lastFeatureValues;
     vector<string> featureNamesEn;
     vector<string> featureNamesFr;
     vector<string> featureNames;
     string durationName, neighbourName;
 
-    bool input_activity = false;
     bool audioToggle;
-    bool desireChanged = false;
     bool speedChanged = false;
     bool DEV_MODE;
     bool languageIsEnglish;
 
     uint64_t search_timer;
+
     int speedSetting;
     string currentPlayingVideo;
     vector<string> lastVideos;

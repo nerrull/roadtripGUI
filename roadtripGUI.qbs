@@ -16,8 +16,6 @@ Project{
             "src/gui/physicalline.h",
             "src/gui/pointcloudrenderer.cpp",
             "src/gui/pointcloudrenderer.h",
-            "src/util/behaviour.cpp",
-            "src/util/behaviour.h",
             "src/util/communication.h",
             "src/util/databaseloader.cpp",
             "src/util/databaseloader.h",
