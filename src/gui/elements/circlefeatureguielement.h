@@ -13,6 +13,8 @@ public:
     void setName(string n);
     void setTextOnTop(bool);
     void setCircleOffset(int);
+    void setWeightColor(ofColor c);
+    void setWeightColors(ofColor c1, ofColor c2);
 
     virtual void draw();
 
@@ -51,6 +53,10 @@ protected:
     bool active;
     string name;
     ofTrueTypeFont font;
+    ofColor weightCircleColor;
+    ofColor secondWeightCircleColor;
+    bool dualColor;
+
 
 };
 

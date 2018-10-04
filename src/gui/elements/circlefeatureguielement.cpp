@@ -11,6 +11,8 @@ CircleFeatureGuiElement::CircleFeatureGuiElement(){
     this->font.load("futura.ttf", 12);
     this->name = "No name";
     this->circleOffset = 0;
+    this->weightCircleColor = ofColor(255);
+    this->dualColor = false;
 
 
 //    exteriorPath.setFilled(false);
@@ -97,6 +99,7 @@ void CircleFeatureGuiElement::drawName(){
 }
 
 void CircleFeatureGuiElement::draw(){
+    ofPushStyle();
     ofPushMatrix();
     ofSetLineWidth(2);
 
@@ -151,7 +154,34 @@ void CircleFeatureGuiElement::draw(){
 
     //Draw weight circle
     ofFill();
-    ofDrawCircle(0,0,0, (circleInteriorRadius-10)*currentWeight);
+    float radius = (circleInteriorRadius-10)*currentWeight;
+    if (dualColor){
+        ofPath left;
+        left.setColor(weightCircleColor);
+        left.arc(0,0,0, radius, radius, 90, 270);
+        left.draw();
+
+        ofPath right;
+        right.setColor(secondWeightCircleColor);
+        right.arc(0,0,0, radius, radius, 270, 90);
+        right.draw();
+    }
+    else{
+        ofSetColor(weightCircleColor);
+        ofDrawCircle(0,0,0,radius);
+    }
+
 
     ofPopMatrix();
+    ofPopStyle();
+}
+
+void CircleFeatureGuiElement::setWeightColor(ofColor c){
+    weightCircleColor = c;
+}
+
+void CircleFeatureGuiElement::setWeightColors(ofColor c1, ofColor c2){
+    weightCircleColor = c1;
+    secondWeightCircleColor = c2;
+    dualColor = true;
 }
