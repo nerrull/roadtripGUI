@@ -20,8 +20,8 @@ void ImageManager::setLayout(int x, int y, int w, int h){
     this->yOffset = y;
     this->width =w;
     this->height =h;
-    segnetColourHeight = h/12.;
-    segnetColors.setLayout(0, y+h - segnetColourHeight, w, segnetColourHeight);
+    segnetColourHeight = h/24.;
+    segnetColors.setLayout(xOffset, y+h , w, segnetColourHeight);
 
 }
 
@@ -42,6 +42,8 @@ void ImageManager::loadImages(string fileName){
 }
 
 void ImageManager::draw(){
+   segnetColors.draw();
+
    if (DEV_MODE) return;
    ofPushMatrix();
    ofPushStyle();
@@ -57,7 +59,7 @@ void ImageManager::draw(){
        return;
    }
 
-   int imageHeight = height - segnetColourHeight;
+   int imageHeight = height ;
    if (firstFrameImage.isUsingTexture()){
        firstFrameImage.draw(0, 0, width/2, imageHeight/3);
        ofDrawRectangle(0, 0, width/2, imageHeight/3);
@@ -73,7 +75,6 @@ void ImageManager::draw(){
         ofDrawRectangle(0,imageHeight/3, width, 2*imageHeight/3);
    }
 
-   segnetColors.draw();
    ofPopStyle();
    ofPopMatrix();
 }

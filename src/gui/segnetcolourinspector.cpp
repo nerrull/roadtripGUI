@@ -57,10 +57,11 @@ void SegnetColourInspector::draw(){
     for(int col = 0; col<6; col++){
          ofFill();
          ofSetColor(colorMap[segnetSingleFeatures[col]]);
-         ofDrawRectangle(wOffset+pad, hOffset+pad+1, rectWidth-2*pad, rectHeight);
+
+         ofDrawRectangle(wOffset, hOffset, rectWidth, rectHeight);
          ofSetColor(255);
          ofNoFill();
-         ofSetLineWidth(2);
+         ofSetLineWidth(1);
          ofDrawRectangle(wOffset, hOffset, rectWidth, rectHeight);
          wOffset +=rectWidth;
     }
@@ -68,12 +69,12 @@ void SegnetColourInspector::draw(){
     for(int col = 0; col<3; col++){
         ofFill();
         ofSetColor(colorPairMap[segnetPairedFeatures[col]].first);
-        ofDrawRectangle(wOffset+pad, hOffset+pad+1, rectWidth/2 -pad, rectHeight);
+        ofDrawRectangle(wOffset, hOffset, rectWidth/2, rectHeight);
         ofSetColor(colorPairMap[segnetPairedFeatures[col]].second);
-        ofDrawRectangle(wOffset +rectWidth/2, hOffset+pad, rectWidth/2-pad, rectHeight);
+        ofDrawRectangle(wOffset +rectWidth/2, hOffset, rectWidth/2, rectHeight);
         ofSetColor(255);
         ofNoFill();
-        ofSetLineWidth(2);
+        ofSetLineWidth(1);
         ofDrawRectangle(wOffset, hOffset, rectWidth, rectHeight);
         wOffset +=rectWidth;
     }

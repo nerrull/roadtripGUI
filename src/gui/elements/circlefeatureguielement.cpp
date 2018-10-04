@@ -101,7 +101,7 @@ void CircleFeatureGuiElement::drawName(){
 void CircleFeatureGuiElement::draw(){
     ofPushMatrix();
     ofPushStyle();
-    ofSetLineWidth(2);
+    ofSetLineWidth(1);
 
     ofTranslate(xOffset, yOffset);
     drawName();
