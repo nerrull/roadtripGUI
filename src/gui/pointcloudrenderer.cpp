@@ -6,6 +6,8 @@ PointCloudRenderer::PointCloudRenderer()
     playedLine.setMode(OF_PRIMITIVE_LINE_STRIP);
     connectionMesh.setMode(OF_PRIMITIVE_LINES);
     playingPointMesh.setMode(OF_PRIMITIVE_POINTS);
+    activePointMesh.setMode(OF_PRIMITIVE_POINTS);
+
 }
 
 
@@ -26,11 +28,15 @@ void PointCloudRenderer::setActiveNodes(vector<int> nodeIndexes){
     vector<ofVec3f> activePoints;
     vector<ofFloatColor> c;
     c.push_back(ofFloatColor(colors[playingIndex]));
+    activePointMesh.clear();
     for (int i : nodeIndexes){
         if (i ==playingIndex) continue;
         activePoints.push_back(visualization_points[i]);
         c.push_back(colors[i]);
+        activePointMesh.addVertex(visualization_points[i]);
+        activePointMesh.addColor(colors[i]);
     }
+
     nodeParticles.updateNodesActivePoints(activePoints,c, visualization_points[playingIndex]);
 }
 
@@ -115,7 +121,6 @@ void PointCloudRenderer::update(){
     nodeParticles.update();
     c_line.update(visualization_points[playingIndex]);
 
-
     if (playedPoints.size() >1){
         line.clear();
         playedLine.clear();
@@ -175,6 +180,10 @@ void PointCloudRenderer::draw()
     ofSetColor(255);
     glPointSize(2);
     mesh.draw();
+
+    glPointSize(8);
+    ofSetColor(255);
+    activePointMesh.draw();
 
     glPointSize(10);
     ofSetColor(255);

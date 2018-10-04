@@ -108,10 +108,6 @@ FeatureKNN::FeatureKNN()
 
 }
 
-void FeatureKNN::setPlayingIndex(int i){
-    playingIndex= i;
-
-}
 
 void FeatureKNN::updateSearchRadius(float v){
     threshold_distance = v;
@@ -211,14 +207,6 @@ void FeatureKNN::initPoints(){
     kdTree.constructKDTree();
 }
 
-void FeatureKNN::getKNN(vector<float> search_point, vector<float> search_weights)
-{
-    vector<double> double_point(search_point.begin(),search_point.end());
-    vector<double> double_weights(search_weights.begin(),search_weights.end());
-
-    kdTree.getWeightedKNN(double_point, targetNumberOfPoints, search_indexes, search_dists, double_weights);
-
-}
 
 void FeatureKNN::update(){
 
@@ -264,6 +252,12 @@ vector<vector<float>> FeatureKNN::getPointFeatureDistances(const vector<float> s
 }
 
 
+void FeatureKNN::getKNN(vector<float> search_point, vector<float> search_weights)
+{
+    vector<double> double_point(search_point.begin(),search_point.end());
+    vector<double> double_weights(search_weights.begin(),search_weights.end());
+    kdTree.getWeightedKNN(double_point, targetNumberOfPoints, search_indexes, search_dists, double_weights);
+}
 
 
 vector<int> FeatureKNN::getSearchResultIndexes(){

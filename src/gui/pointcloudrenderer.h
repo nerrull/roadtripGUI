@@ -57,6 +57,8 @@ public:
     ofMesh connectionMesh;
 
     ofMesh playingPointMesh;
+    ofMesh activePointMesh;
+
 
     //Active points
     vector<int> draw_indexes;

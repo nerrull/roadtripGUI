@@ -33,9 +33,9 @@ void ofApp::setup(){
 
     numKnobs =23;
     search_timer =ofGetElapsedTimeMillis();
-
     databaseLoader.loadHDF5Data(db_path);
-    fKNN.init(&databaseLoader);
+    fc.initialize(&databaseLoader);
+    
     if (Settings::getInt("point_mode") ==0){
         pointCloudRender.setRotation(false);
         pointCloudRender.initPoints(databaseLoader.dimension_reduction_2D, databaseLoader.colors);
@@ -58,6 +58,21 @@ void ofApp::setup(){
     featureGuiElements[11] = make_unique<ColorCircle>();
     dynamic_cast<ColorCircle*>(featureGuiElements[11].get())->setColorLimits(databaseLoader.color_min_max.first, databaseLoader.color_min_max.second);
 
+    //Set the colours on the segnet elements
+    int segnetStart =14;
+    int segnetDoubleStart =20;
+    int i =0;
+    for (string name : segnetSingleFeatures){
+        featureGuiElements[i +segnetStart]->setWeightColor(imageManager.getSegnetColor(name));
+        i++;
+    }
+    i=0;
+    for (string name : segnetPairedFeatures){
+        pair<ofColor, ofColor> c = imageManager.getSegnetColorPair(name);
+        featureGuiElements[i +segnetDoubleStart]->setWeightColors(c.first, c.second);
+        i++;
+    }
+
     speedSetting =0;
     currentPlayingVideo ="";
 
@@ -72,7 +87,7 @@ void ofApp::setup(){
 
 void ofApp::initNames(){
     featureNamesEn.push_back("Loudness");
-    featureNamesEn.push_back("Spectral\nCentroid");
+    featureNamesEn.push_back("Pitch");
     featureNamesEn.push_back("Percussiveness");
     featureNamesEn.push_back("Bandwidth");
     featureNamesEn.push_back("Vehicle speed");
@@ -93,10 +108,9 @@ void ofApp::initNames(){
     featureNamesEn.push_back("Fence/Pole");
     featureNamesEn.push_back("Bike/Pedestrian");
 
-
     featureNamesFr.push_back("Volume");
-    featureNamesFr.push_back("Centroïde\nSpectral");
-    featureNamesFr.push_back("Percussif");
+    featureNamesFr.push_back("Hauteur");
+    featureNamesFr.push_back("Percussion");
     featureNamesFr.push_back("Largeur\nde bande");
     featureNamesFr.push_back("Vitesse");
     featureNamesFr.push_back("Instabilité");
@@ -110,10 +124,10 @@ void ofApp::initNames(){
     featureNamesFr.push_back("Trottoir");
     featureNamesFr.push_back("Route");
     featureNamesFr.push_back("Ciel");
-    featureNamesFr.push_back("Végétation");
+    featureNamesFr.push_back("Arbre");
     featureNamesFr.push_back("Véhicule");
     featureNamesFr.push_back("Signalisation");
-    featureNamesFr.push_back("Clôture/Pôteau");
+    featureNamesFr.push_back("Clôture/Poteau");
     featureNamesFr.push_back("Piéton/Vélo");
 
     languageIsEnglish = Settings::getBool("english");
@@ -122,6 +136,7 @@ void ofApp::initNames(){
         neighbourName= "Neigbours";
         featureNames = featureNamesEn;
     }
+
     else {
         durationName= "Durée";
         neighbourName = "Voisins";
@@ -229,16 +244,15 @@ void ofApp::update(){
 
     pointCloudRender.update();
     fc.update();
+    videoIndexes =fc.getVideoIndexes();
+
+    pointCloudRender.setActiveNodes(videoIndexes);
+    vector<string> videoNames = databaseLoader.getVideoNamesFromIndexes(videoIndexes);
 
     //Every 100 ms
-    if ((currentTime - search_timer)>100)
-    {
-        fKNN.getKNN(fc.getTargetValues(), fc.getWeights());
+    if ((currentTime - search_timer)>100){
         search_timer =currentTime;
-        videoIndexes = fKNN.getSearchResultIndexes();
-        pointCloudRender.setActiveNodes(videoIndexes);
 
-        vector<string> videoNames = databaseLoader.getVideoNamesFromIndexes(videoIndexes);
         if (fc.state == FeatureControl::HUMAN_ACTIVE){
             if (currentPlayingVideo != videoNames[0]){
                 coms.publishVideoNow( videoNames[0], true);
@@ -247,7 +261,6 @@ void ofApp::update(){
                 lastVideos.push_back(videoNames[0]);
             }
         }
-
         else if (!vectorsAreEqual(videoNames, lastVideos) && videoNames.size()>0){
             coms.publishVideos(videoNames, true);
             lastVideos = videoNames;
@@ -302,26 +315,40 @@ void ofApp::draw(){
 
     ofBackground(0);
     ofSetColor(255);
-    if (DEV_MODE){
-        std::stringstream strm;
-        strm << "fps: " << ofGetFrameRate();
-        ofDrawBitmapString(strm.str(),20, 20);
-    }
 
 
-    int windowWidth =ofGetWidth();
-    int windowHeight=ofGetHeight();
-
+//    drawColors();
     waveform.draw();
     pointCloudRender.draw();
     imageManager.draw();
 
-    drawControls(windowWidth, windowHeight);
-    drawColors();
+    drawControls();
+
+    if (DEV_MODE){
+        std::stringstream strm;
+        strm << "fps: " << ofGetFrameRate();
+        ofDrawBitmapString(strm.str(),20, 20);
+        drawDebug();
+    }
+}
+
+void ofApp::drawDebug(){
+    ofPushMatrix();
+    ofTranslate(ofGetWidth()/3*2,20);
+    ostringstream oss;
+    for (auto video:videoIndexes){
+        oss<<video <<endl;
+    }
+    oss <<endl;
+    ofDrawBitmapString(oss.str(),0,0);
+    ofTranslate(30,0);
+    fc.draw();
+    ofPopMatrix();
+
 }
 
 //Draw control gui elements
-void ofApp::drawControls(int windowWidth, int windowHeight){
+void ofApp::drawControls(){
 
     //Draw feature controls
     for (int i=0; i< featureGuiElements.size(); i++){
@@ -369,11 +396,8 @@ void ofApp::keyPressed(int key){
 
 
 void ofApp::playRandomVideo(){
-
     updatePlayingVideo(databaseLoader.getRandomVideo());
     coms.publishVideoNow( currentPlayingVideo, true);
-
-
 }
 
 void ofApp::updatePlayingVideo(string video){
@@ -382,7 +406,6 @@ void ofApp::updatePlayingVideo(string video){
 
     imageManager.loadImages(currentPlayingVideo);
     fc.updateFeatureValues( databaseLoader.getFeaturesFromName(currentPlayingVideo));
-    fKNN.setPlayingIndex(videoIndex);
     pointCloudRender.setPlayingNode(videoIndex);
 }
 
@@ -392,8 +415,7 @@ void ofApp::incrementSpeed(int step){
 }
 
 void ofApp::incrementSearchRadius(int step){
-    int nv=  CLAMP(this->fKNN.numVideos+step, 1, 50);
-    this->fKNN.setNumVideos(nv);
+    int nv= this->fc.incrementSearchRadius(step);
     this->featureGuiElements[1]->setValue(nv);
 }
 

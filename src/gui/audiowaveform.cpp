@@ -126,13 +126,11 @@ void AudioWaveform::setLayout(int x, int y, int w, int h){
 }
 
 void AudioWaveform::drawWaveform(int w, int h){
+    ofPushStyle();
     ofNoFill();
+    ofSetColor(255);
     ofSetLineWidth(1);
-    //ofDrawRectangle(0, 0, width, height);
-
-    ofSetColor(255, 255, 255);
-
-    ofSetLineWidth(1);
+    ofDrawRectangle(0, 0, width, height);
 
     ofBeginShape();
     int step = INTERNAL_BUFFER_LENGTH/w;
@@ -140,14 +138,19 @@ void AudioWaveform::drawWaveform(int w, int h){
         ofVertex(i, h/2 -drawBuffer[step*i]*h/2);
     }
     ofEndShape();
+    ofPopStyle();
 }
 
 void AudioWaveform::drawSpectrum(int width, int height){
-
     //std::lock_guard<std::mutex> lock(spectroMutex);
+    ofPushStyle();
+    ofSetColor(255);
     spectrogram.update();
     spectrogram.draw(0, 0,width, height);
 
+    ofSetLineWidth(1);
+    ofDrawRectangle(0, 0, width, height);
+    ofPopStyle();
 }
 
 void AudioWaveform::draw(){

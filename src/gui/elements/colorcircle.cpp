@@ -82,7 +82,5 @@ void ColorCircle::draw(){
     //Draw weight circle
     ofFill();
     ofDrawCircle(0,0,0, (circleInteriorRadius-10 )*currentWeight);
-
-
     ofPopMatrix();
 }

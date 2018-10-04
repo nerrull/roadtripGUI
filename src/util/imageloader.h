@@ -7,6 +7,7 @@ class ImageLoader
 {
 public:
     ImageLoader();
+    map<string, ofPixels> images;
     vector<ofPixels> imagePixels;
     vector<string> imageNames;
 

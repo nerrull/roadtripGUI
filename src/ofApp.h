@@ -7,13 +7,9 @@
 #include "gui/audiowaveform.h"
 #include "gui/pointcloudrenderer.h"
 #include "gui/elements/uielements.h"
-#include "util/featureKNN.h"
 #include "util/databaseloader.h"
 #include "util/communication.h"
 #include "util/featurecontrol.h"
-#define NUM_MSG_STRINGS 20
-
-
 
 class ofApp : public ofBaseApp{
 
@@ -25,7 +21,8 @@ public:
 
     //Draw/update functions
     void drawColors();
-    void drawControls(int,int);
+    void drawControls();
+    void drawDebug();
 
     //Coms
     void updateOSC();
@@ -47,8 +44,6 @@ public:
     bool vectorsAreEqual(vector<string>v1, vector<string> v2);
     void toggleLanguage();
     void playRandomVideo();
-
-
 
     //Default functions
     void setup();
@@ -74,7 +69,6 @@ public:
     SegnetColourInspector colourInspector;
     AudioWaveform waveform;
     DatabaseLoader databaseLoader;
-    FeatureKNN fKNN;
     PointCloudRenderer pointCloudRender;
     FeatureControl fc;
     vector<unique_ptr<CircleFeatureGuiElement>> featureGuiElements;
@@ -111,7 +105,6 @@ public:
     int speedSetting;
     string currentPlayingVideo;
     vector<string> lastVideos;
-
 
     int SPEEDS [19]= {-1, 4000, 3000, 2000, 1500, 1000,900,800,700,600, 500,400, 300, 250, 200, 150, 100, 66, 33};
 

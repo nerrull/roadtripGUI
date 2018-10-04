@@ -16,10 +16,9 @@ void ImageLoader::loadAllImages(){
     for (int i =0 ; i<files.size(); i++){
         ofPixels p;
         ofLoadImage(p,dir.getPath(i));
-        imagePixels.push_back(p);
         string fullname = dir.getName(i);
-        imageNames.push_back(fullname);
-        ofLogNotice()<<"Loading image "<<fullname<<endl;
+        images[fullname] = p;
+        ofLogNotice()<<"Loading image "<< i<<"/"<<files.size()<< " - "<<fullname<<endl;
     }
 }
 
@@ -30,7 +29,7 @@ ofPixels* ImageLoader::getRandomImage(){
 }
 
 ofPixels* ImageLoader::getImage(string imageName){
-    return &imagePixels[getImageIndexFromName(imageName)];
+    return &images[imageName];
 }
 
 

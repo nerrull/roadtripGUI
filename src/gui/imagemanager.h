@@ -14,8 +14,8 @@ public:
     string SEGNET_DATA_BASE_PATH;
     string currentFileName;
 
-    ImageLoader imgLoader1;
-    ImageLoader imgLoader2;
+    ImageLoader frameLoader;
+    ImageLoader segnetLoader;
     ImageLoader imgLoader3;
 
 
@@ -24,6 +24,9 @@ public:
     ofImage heatmapImage;
 
     SegnetColourInspector segnetColors;
+    ofColor getSegnetColor(string segnetFeature);
+    pair<ofColor, ofColor> getSegnetColorPair(string segnetFeature);
+
 
 
     //Loading images takes too long so we disable them in dev mode

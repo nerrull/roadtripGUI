@@ -62,11 +62,11 @@ public:
         ofPushStyle();
         ofSetColor(255,255,255,200);
         ofSetLineWidth(1);
+        line.draw();
 //        if (drawOffset >0){
 //            drawLine.draw();
 //        }
 //        else{
-            line.draw();
 //        }
         ofPopStyle();
 

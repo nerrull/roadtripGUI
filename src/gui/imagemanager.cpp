@@ -11,12 +11,8 @@ ImageManager::ImageManager()
 
     if (DEV_MODE) return;
 
-    imgLoader1.setPath(IMAGE_DATA_BASE_PATH);
-    imgLoader2.setPath(SEGNET_DATA_BASE_PATH);
-    imgLoader3.setPath(SEGNET_DATA_BASE_PATH);
-
-
-
+    frameLoader.setPath(IMAGE_DATA_BASE_PATH);
+    segnetLoader.setPath(SEGNET_DATA_BASE_PATH);
 }
 
 void ImageManager::setLayout(int x, int y, int w, int h){
@@ -38,22 +34,25 @@ void ImageManager::loadImages(string fileName){
     string segnetName = fileName + "_segnet.png";
     string uncertaintyName = fileName + "_uncertainty.png";
 
-    firstFrameImage.setFromPixels(*imgLoader1.getImage(frameName));
-    segnetImage.setFromPixels(*imgLoader2.getImage(segnetName));
-    heatmapImage.setFromPixels(*imgLoader3.getImage(uncertaintyName));
+    firstFrameImage.setFromPixels(*frameLoader.getImage(frameName));
+    segnetImage.setFromPixels(*segnetLoader.getImage(segnetName));
+    heatmapImage.setFromPixels(*segnetLoader.getImage(uncertaintyName));
     loaded = true;
 
 }
 
 void ImageManager::draw(){
    if (DEV_MODE) return;
-
    ofPushMatrix();
+   ofPushStyle();
    ofSetColor(255);
    ofTranslate(xOffset,yOffset);
    //ofDrawBitmapString(currentFileName, 15, 15);
+   ofSetLineWidth(1);
+   ofNoFill();
 
    if (!loaded){
+       ofPopStyle();
        ofPopMatrix();
        return;
    }
@@ -61,21 +60,33 @@ void ImageManager::draw(){
    int imageHeight = height - segnetColourHeight;
    if (firstFrameImage.isUsingTexture()){
        firstFrameImage.draw(0, 0, width/2, imageHeight/3);
+       ofDrawRectangle(0, 0, width/2, imageHeight/3);
    }
 
    if (heatmapImage.isUsingTexture()){
        heatmapImage.draw(width/2,0, width/2, imageHeight/3);
+       ofDrawRectangle(width/2,0, width/2, imageHeight/3);
    }
 
    if (segnetImage.isUsingTexture()){
         segnetImage.draw(0,imageHeight/3, width, 2*imageHeight/3);
+        ofDrawRectangle(0,imageHeight/3, width, 2*imageHeight/3);
    }
 
    segnetColors.draw();
+   ofPopStyle();
    ofPopMatrix();
 }
 
 void ImageManager::update(){
+}
+
+ofColor ImageManager::getSegnetColor(string segnetFeature){
+    return segnetColors.colorMap[segnetFeature];
+}
+
+pair<ofColor, ofColor> ImageManager::getSegnetColorPair(string segnetFeature){
+    return segnetColors.colorPairMap[segnetFeature];
 }
 
 

@@ -99,8 +99,8 @@ void CircleFeatureGuiElement::drawName(){
 }
 
 void CircleFeatureGuiElement::draw(){
-    ofPushStyle();
     ofPushMatrix();
+    ofPushStyle();
     ofSetLineWidth(2);
 
     ofTranslate(xOffset, yOffset);
@@ -172,8 +172,8 @@ void CircleFeatureGuiElement::draw(){
     }
 
 
-    ofPopMatrix();
     ofPopStyle();
+    ofPopMatrix();
 }
 
 void CircleFeatureGuiElement::setWeightColor(ofColor c){
