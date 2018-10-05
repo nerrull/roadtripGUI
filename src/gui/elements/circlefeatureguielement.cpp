@@ -109,6 +109,8 @@ void CircleFeatureGuiElement::draw(){
     ofTranslate(0, circleOffset);
     ofTranslate(width/2, height/2);
 
+
+
     //Draw outer circle
     ofSetColor(255);
     exteriorPath.draw();

@@ -50,6 +50,10 @@ private:
    ofImage spectrogram;
 
    int spectrogramOffset;
+   vector<int> js;
+   vector<int> binIndexes;
+
+
 
 
 

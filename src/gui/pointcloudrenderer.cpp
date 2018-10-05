@@ -191,6 +191,8 @@ void PointCloudRenderer::draw()
 
     ofPopMatrix();
     cam.end();
+    ofSetLineWidth(1);
+    ofDrawRectangle(viewMain);
 
 }
 

@@ -14,16 +14,24 @@ AudioWaveform::AudioWaveform()
     fft = ofxFft::create(INTERNAL_BUFFER_LENGTH, OF_FFT_WINDOW_HAMMING);
 
     spectrogram.allocate(ofGetWidth()/3, ofGetHeight()/3, OF_IMAGE_GRAYSCALE);
-
     spectrogram.setColor(ofColor::black);
-
     audioBins.resize(fft->getBinSize());
 
+    int n = (int) spectrogram.getHeight();
+    int maxBin = fft->getBinFromFrequency(5000);
+    int spectrogramWidth = (int) spectrogram.getWidth();
+
+   float binstep = maxBin/float(n);
+
+    for(int i = 0; i < n; i++) {
+        js.push_back((n - i - 1) * spectrogramWidth +  spectrogramWidth-1);
+        int logi = ofMap(powFreq(i+1), powFreq(1), powFreq(n), 1, n);
+        binIndexes.push_back(i*binstep);
+    }
 
 }
 
 void AudioWaveform::receiveBuffer(ofSoundBuffer& buffer){
-
 
     int lastChunkStart = INTERNAL_BUFFER_LENGTH -IN_AUDIO_BUFFER_LENGTH ;
 
@@ -33,8 +41,6 @@ void AudioWaveform::receiveBuffer(ofSoundBuffer& buffer){
     //leftBuffer.addTo(rightBuffer);
     std::copy(soundBuffer.begin()+IN_AUDIO_BUFFER_LENGTH, soundBuffer.end(), soundBuffer.begin());
     std::copy(std::begin(rightBuffer.getBuffer()),std::end(rightBuffer.getBuffer()), std::begin(soundBuffer)+lastChunkStart);
-
-
 
     fft->setSignal(&soundBuffer[0]);
 
@@ -47,22 +53,18 @@ void AudioWaveform::receiveBuffer(ofSoundBuffer& buffer){
             maxValue = abs(audioBins[i]);
         }
     }
-    maxValue = max(maxValue, 0.1f);
+    if (maxValue == 0){
+        maxValue = max(maxValue, 0.1f);
+    }
     for(int i = 0; i < fft->getBinSize(); i++) {
         audioBins[i] /= maxValue;
     }
 
-    int spectrogramWidth = (int) spectrogram.getWidth();
-
     int n = (int) spectrogram.getHeight();
-
-
     shiftSpectrogram();
 
     for(int i = 0; i < n; i++) {
-        int j =(n - i - 1) * spectrogramWidth +  spectrogramWidth-1;
-        int logi = ofMap(powFreq(i), powFreq(0), powFreq(n), 0, n);
-        spectrogram.setColor(j, (unsigned char) (255. * audioBins[logi]));
+        spectrogram.setColor(js[i], (unsigned char) (255. * audioBins[binIndexes[i]]));
     }
 
 }
@@ -129,27 +131,28 @@ void AudioWaveform::drawWaveform(int w, int h){
     ofPushStyle();
     ofNoFill();
     ofSetColor(255);
-    ofSetLineWidth(1);
-    ofDrawRectangle(0, 0, width, height);
 
     ofBeginShape();
     int step = INTERNAL_BUFFER_LENGTH/w;
     for (unsigned int i = 0; i < w; i++){
         ofVertex(i, h/2 -drawBuffer[step*i]*h/2);
     }
+    ofSetLineWidth(1);
+    ofDrawRectangle(0, 0, w, h);
     ofEndShape();
     ofPopStyle();
 }
 
-void AudioWaveform::drawSpectrum(int width, int height){
+void AudioWaveform::drawSpectrum(int w, int h){
     //std::lock_guard<std::mutex> lock(spectroMutex);
     ofPushStyle();
     ofSetColor(255);
     spectrogram.update();
-    spectrogram.draw(0, 0,width, height);
-
+    spectrogram.draw(0, 0, -1, w, h);
+    ofSetColor(255);
+    ofNoFill();
     ofSetLineWidth(1);
-    ofDrawRectangle(0, 0, width, height);
+    ofDrawRectangle(0, 0, 0, w, h);
     ofPopStyle();
 }
 
@@ -159,9 +162,9 @@ void AudioWaveform::draw(){
     ofPushMatrix();
     ofTranslate(xOffset, yOffset);
 
-    drawWaveform(width/2, height);
-    ofTranslate(width/2, yOffset);
-    drawSpectrum(width/2, height);
+    drawSpectrum(2*width/3, height);
+    ofTranslate(2*width/3, yOffset);
+    drawWaveform(width/3, height);
 
 
     ofPopMatrix();

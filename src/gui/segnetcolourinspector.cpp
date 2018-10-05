@@ -48,7 +48,7 @@ void SegnetColourInspector::draw(){
     ofFill();
 
     int rectWidth = width/9;
-    int rectHeight = height/2;
+    int rectHeight = height;
 
     int hOffset, wOffset;
     wOffset=0;
@@ -80,5 +80,4 @@ void SegnetColourInspector::draw(){
     }
     ofPopStyle();
     ofPopMatrix();
-
 }

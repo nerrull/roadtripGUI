@@ -93,7 +93,7 @@ void ofApp::initNames(){
     featureNamesEn.push_back("Vehicle speed");
     featureNamesEn.push_back("Instability");
     featureNamesEn.push_back("Engine RPM");
-    featureNamesEn.push_back("Intake T°");
+    featureNamesEn.push_back("Temperature");
     featureNamesEn.push_back("Roll");
     featureNamesEn.push_back("Hue");
     featureNamesEn.push_back("Lightness");
@@ -115,7 +115,7 @@ void ofApp::initNames(){
     featureNamesFr.push_back("Vitesse");
     featureNamesFr.push_back("Instabilité");
     featureNamesFr.push_back("Régime Moteur");
-    featureNamesFr.push_back("T° extérieur");
+    featureNamesFr.push_back("Température");
     featureNamesFr.push_back("Inclinaison");
     featureNamesFr.push_back("Teinte");
     featureNamesFr.push_back("Luminosité");

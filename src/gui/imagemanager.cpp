@@ -21,7 +21,7 @@ void ImageManager::setLayout(int x, int y, int w, int h){
     this->width =w;
     this->height =h;
     segnetColourHeight = h/24.;
-    segnetColors.setLayout(xOffset, y+h , w, segnetColourHeight);
+    segnetColors.setLayout(xOffset, y+height -segnetColourHeight , w, segnetColourHeight);
 
 }
 
@@ -71,8 +71,9 @@ void ImageManager::draw(){
    }
 
    if (segnetImage.isUsingTexture()){
-        segnetImage.draw(0,imageHeight/3, width, 2*imageHeight/3);
-        ofDrawRectangle(0,imageHeight/3, width, 2*imageHeight/3);
+       int segHeight = 2*imageHeight/3 -segnetColourHeight;
+       segnetImage.draw(0,imageHeight/3, width, segHeight);
+       ofDrawRectangle(0,imageHeight/3, width, segHeight);
    }
 
    ofPopStyle();
