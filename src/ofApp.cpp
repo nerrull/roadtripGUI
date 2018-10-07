@@ -49,12 +49,18 @@ void ofApp::setup(){
     //Initialize feature gui elements
     int num_features =21;    
     featureGuiElements.resize(num_features+2);
-    featureGuiElements[0] = make_unique<FillCircle>();
+    featureGuiElements[0] = make_unique<DurationElement>();
     featureGuiElements[1] = make_unique<SearchRadiusElement>();
+
     for (int i =2; i<featureGuiElements.size(); i++){
         featureGuiElements[i]= make_unique<CircleFeatureGuiElement>();
     }
-    //Init custom gui elements (hue)
+
+
+    //Init custom gui elements
+    //Tilt
+    featureGuiElements[10]= make_unique<TiltElement>();
+    //Hue
     featureGuiElements[11] = make_unique<ColorCircle>();
     dynamic_cast<ColorCircle*>(featureGuiElements[11].get())->setColorLimits(databaseLoader.color_min_max.first, databaseLoader.color_min_max.second);
 
@@ -254,12 +260,15 @@ void ofApp::update(){
         search_timer =currentTime;
 
         if (fc.state == FeatureControl::HUMAN_ACTIVE){
-            if (currentPlayingVideo != videoNames[0]){
-                coms.publishVideoNow( videoNames[0], true);
-                currentPlayingVideo = videoNames[0];
-                lastVideos.clear();
-                lastVideos.push_back(videoNames[0]);
+            if (videoNames.size() > 0){
+                if (currentPlayingVideo != videoNames[0]){
+                    coms.publishVideoNow( videoNames[0], true);
+                    currentPlayingVideo = videoNames[0];
+                    lastVideos.clear();
+                    lastVideos.push_back(videoNames[0]);
+                }
             }
+
         }
         else if (!vectorsAreEqual(videoNames, lastVideos) && videoNames.size()>0){
             coms.publishVideos(videoNames, true);
@@ -282,7 +291,8 @@ void ofApp::update(){
         speedChanged = false;
         int speed = SPEEDS[speedSetting];
         if (speed == -1) speed = playingFileDuration;
-        featureGuiElements[0]->setValue(float(1000./60./speed));
+        featureGuiElements[0]->setValue(float(speed));
+
     }
 
     //Send message to lights if features change
@@ -315,7 +325,6 @@ void ofApp::draw(){
 
     ofBackground(0);
     ofSetColor(255);
-
 
 //    drawColors();
     waveform.draw();
@@ -436,12 +445,12 @@ void ofApp::updateOSC() {
             updatePlayingVideo(m.getArgAsString(0));
             playingFileDuration = m.getArgAsInt64(1);
 
-            if (this->speedSetting ==0){
-               featureGuiElements[0]->setValue(float(1000./60./playingFileDuration));
+            if (this->speedSetting ==-1){
+               featureGuiElements[0]->setValue(float(playingFileDuration));
             }
             featureGuiElements[0]->reset();
-
         }
+
         else
         {
             ofLogVerbose()<<  m.getAddress();
@@ -507,6 +516,19 @@ void ofApp::handlePythonMessages(){
                 }
             }
             ofLogError(ofToString(ofGetElapsedTimef(),3)) << "FEATURE_DIFFS Message received" ;
+        }
+
+        if ( m.getAddress().compare( string("/SET_SPEED") ) == 0 )
+        {
+            int speed=  m.getArgAsInt(0);
+            fc.registerInputActivity();
+
+            setSpeed(speed);
+            ofLogError(ofToString(ofGetElapsedTimef(),3)) << "SET_SPEED Message received" ;
+        }
+        else
+        {
+            ofLogVerbose()<<  m.getAddress() << "message received ... not handled";
         }
     }
 

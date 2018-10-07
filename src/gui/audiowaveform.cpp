@@ -1,7 +1,11 @@
 #include "audiowaveform.h"
+#include "ofxJsonSettings.h"
 
 AudioWaveform::AudioWaveform()
 {
+
+    Settings::get().load("settings.json");
+
     spectrogramOffset=0;
     soundBuffer.reserve(INTERNAL_BUFFER_LENGTH);
     drawBuffer.reserve(INTERNAL_BUFFER_LENGTH);
@@ -21,14 +25,19 @@ AudioWaveform::AudioWaveform()
     int maxBin = fft->getBinFromFrequency(5000);
     int spectrogramWidth = (int) spectrogram.getWidth();
 
-   float binstep = maxBin/float(n);
+    float binstep = maxBin/float(n);
+    bool expIndex = Settings::getFloat("log_spectral_axis");
 
     for(int i = 0; i < n; i++) {
         js.push_back((n - i - 1) * spectrogramWidth +  spectrogramWidth-1);
-        int logi = ofMap(powFreq(i+1), powFreq(1), powFreq(n), 1, n);
-        binIndexes.push_back(i*binstep);
+        int expi = powFreq(float(i)/n +0.5)*i;
+        if (expIndex){
+            binIndexes.push_back(expi*binstep);
+        }
+        else{
+            binIndexes.push_back(i*binstep);
+        }
     }
-
 }
 
 void AudioWaveform::receiveBuffer(ofSoundBuffer& buffer){

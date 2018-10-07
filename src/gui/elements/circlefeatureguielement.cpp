@@ -81,10 +81,9 @@ void CircleFeatureGuiElement::setName(string n){
 void CircleFeatureGuiElement::drawName(){
     float fontHeight = font.stringHeight(name);
     float fontWidth = font.stringWidth(name);
-    int offset = 0;
-    if (fontWidth < this->width){
-        offset = (this->width - fontWidth)/2;
-    }
+
+    int offset = (this->width - fontWidth)/2;
+
     ofSetColor(255);
     ofPushMatrix();
     int y= 0;
@@ -102,15 +101,11 @@ void CircleFeatureGuiElement::draw(){
     ofPushMatrix();
     ofPushStyle();
     ofSetLineWidth(1);
-
     ofTranslate(xOffset, yOffset);
     drawName();
 
     ofTranslate(0, circleOffset);
     ofTranslate(width/2, height/2);
-
-
-
     //Draw outer circle
     ofSetColor(255);
     exteriorPath.draw();
@@ -172,6 +167,7 @@ void CircleFeatureGuiElement::draw(){
         ofSetColor(weightCircleColor);
         ofDrawCircle(0,0,0,radius);
     }
+
 
 
     ofPopStyle();

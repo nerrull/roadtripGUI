@@ -300,7 +300,10 @@ void FeatureControl::updateActiveFeature(int index){
     //Timeout the other features
     for(int i=0; i<this->inactiveCounter.size(); i++){
         if (i ==index )continue;
-        inactiveCounter[i] = idleTimeout*secondsToFrames;
+        //Give other active features one second before they decay
+        else if (featureActive[index]){
+            inactiveCounter[i] = idleTimeout*secondsToFrames - 1*secondsToFrames;
+        }
     }
 }
 

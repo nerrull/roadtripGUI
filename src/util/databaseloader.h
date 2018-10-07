@@ -27,7 +27,7 @@ public:
 
     vector<float> getFeaturesFromName(string name);
     vector<float> getFeaturesFromindex(int index);
-    int  getVideoIndexFromName(string name);
+    int getVideoIndexFromName(string name);
 
     vector< string> feature_names;
     vector< string> video_names;

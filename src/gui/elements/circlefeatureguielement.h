@@ -17,8 +17,6 @@ public:
     void setWeightColors(ofColor c1, ofColor c2);
 
     virtual void draw();
-
-
     virtual void setRange(int range);
     virtual void setPosition(int x, int y);
     virtual void setSize(int w, int h);
@@ -29,8 +27,11 @@ public:
     virtual void setTarget(float v){targetValue = v;}
     virtual void setActive(bool v){active = v;}
 
+    virtual void setMax(float v){return;}
+
     virtual void update(){}
     virtual void reset(){}
+
 
 
 
