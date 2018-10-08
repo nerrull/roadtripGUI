@@ -16,10 +16,10 @@ public:
    void receiveBuffer(ofSoundBuffer& buffer);
    void setLayout(int x, int y, int w, int h);
    void draw();
+   void update();
    void draw2D();
    void drawSpectrum(int w, int h);
    void drawWaveform(int w, int h);
-
    void shiftSpectrogram();
 
 

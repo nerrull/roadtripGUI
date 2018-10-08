@@ -43,7 +43,6 @@ AudioWaveform::AudioWaveform()
 void AudioWaveform::receiveBuffer(ofSoundBuffer& buffer){
 
     int lastChunkStart = INTERNAL_BUFFER_LENGTH -IN_AUDIO_BUFFER_LENGTH ;
-
     std::lock_guard<std::mutex> lock(bufferMutex);
     buffer.getChannel(leftBuffer,0 );
     buffer.getChannel(rightBuffer,1 );
@@ -51,50 +50,21 @@ void AudioWaveform::receiveBuffer(ofSoundBuffer& buffer){
     std::copy(soundBuffer.begin()+IN_AUDIO_BUFFER_LENGTH, soundBuffer.end(), soundBuffer.begin());
     std::copy(std::begin(rightBuffer.getBuffer()),std::end(rightBuffer.getBuffer()), std::begin(soundBuffer)+lastChunkStart);
 
-    fft->setSignal(&soundBuffer[0]);
-
-    float* curFft = fft->getAmplitude();
-    memcpy(&audioBins[0], curFft, sizeof(float) * fft->getBinSize());
-
-    float maxValue = 0.;
-    for(int i = 0; i < fft->getBinSize(); i++) {
-        if(abs(audioBins[i]) > maxValue) {
-            maxValue = abs(audioBins[i]);
-        }
-    }
-    if (maxValue == 0){
-        maxValue = max(maxValue, 0.1f);
-    }
-    for(int i = 0; i < fft->getBinSize(); i++) {
-        audioBins[i] /= maxValue;
-    }
-
-    int n = (int) spectrogram.getHeight();
-    shiftSpectrogram();
-
-    for(int i = 0; i < n; i++) {
-        spectrogram.setColor(js[i], (unsigned char) (255. * audioBins[binIndexes[i]]));
-    }
-
 }
 
 void AudioWaveform::shiftSpectrogram(){
     int spectrogramWidth = (int) spectrogram.getWidth();
     int spectrogramHeight= (int) spectrogram.getHeight();
-
-    for (int i = 1 ; i < spectrogramWidth; i++){
-        for (int j = 0 ; j < spectrogramHeight; j++){
-            ofColor color = spectrogram.getColor( i,j );
-            spectrogram.setColor( i-1,j, color );
-        }
-    }
+    ofPixels crop;
+    spectrogram.getPixelsRef().cropTo(crop,1,0,spectrogramWidth-1,spectrogramHeight);
+    crop.pasteInto(spectrogram, 0,0);
+    spectrogram.update();
 }
 
 void AudioWaveform::copyBuffer(){
     std::lock_guard<std::mutex> lock(bufferMutex);
     drawBuffer = soundBuffer;
 }
-
 
 void AudioWaveform::copyLeftRightBuffer(){
     std::lock_guard<std::mutex> lock(bufferMutex);
@@ -156,7 +126,6 @@ void AudioWaveform::drawSpectrum(int w, int h){
     //std::lock_guard<std::mutex> lock(spectroMutex);
     ofPushStyle();
     ofSetColor(255);
-    spectrogram.update();
     spectrogram.draw(0, 0, -1, w, h);
     ofSetColor(255);
     ofNoFill();
@@ -167,17 +136,41 @@ void AudioWaveform::drawSpectrum(int w, int h){
 
 void AudioWaveform::draw(){
     //Copy the internal buffer
-    copyBuffer();
     ofPushMatrix();
     ofTranslate(xOffset, yOffset);
 
     drawSpectrum(2*width/3, height);
     ofTranslate(2*width/3, yOffset);
     drawWaveform(width/3, height);
-
-
     ofPopMatrix();
+}
 
+void AudioWaveform::update(){
+    copyBuffer();
+    fft->setSignal(&drawBuffer[0]);
+
+    float* curFft = fft->getAmplitude();
+    memcpy(&audioBins[0], curFft, sizeof(float) * fft->getBinSize());
+
+    float maxValue = 0.;
+    for(int i = 0; i < fft->getBinSize(); i++) {
+        if(abs(audioBins[i]) > maxValue) {
+            maxValue = abs(audioBins[i]);
+        }
+    }
+    if (maxValue == 0){
+        maxValue = max(maxValue, 0.1f);
+    }
+    for(int i = 0; i < fft->getBinSize(); i++) {
+        audioBins[i] /= maxValue;
+    }
+
+    int n = (int) spectrogram.getHeight();
+    shiftSpectrogram();
+
+    for(int i = 0; i < n; i++) {
+        spectrogram.setColor(js[i], (unsigned char) (255. * audioBins[binIndexes[i]]));
+    }
 }
 
 
