@@ -37,7 +37,7 @@ void PointCloudRenderer::setActiveNodes(vector<int> nodeIndexes){
         activePointMesh.addColor(colors[i]);
     }
 
-    nodeParticles.updateNodesActivePoints(activePoints,c, visualization_points[playingIndex]);
+//    nodeParticles.updateNodesActivePoints(activePoints,c, visualization_points[playingIndex]);
 }
 
 
@@ -115,24 +115,8 @@ void PointCloudRenderer::initPoints(int nPoints, vector<ofColor>c){
 void PointCloudRenderer::update(){
 //    updatePoints();
 
-    if (playedPoints.size() >10){
-        playedPoints.pop_front();
-    }
-    nodeParticles.update();
+//    nodeParticles.update();
     c_line.update(visualization_points[playingIndex]);
-
-    if (playedPoints.size() >1){
-        line.clear();
-        playedLine.clear();
-        ofVec3f p = playedPoints[0];
-        line.addVertex(p);
-
-        for (int pointIndex=1; pointIndex < playedPoints.size(); pointIndex ++){
-            p = playedPoints[pointIndex];
-            line.curveTo(p);
-        }
-
-    }
 }
 
 void PointCloudRenderer::updatePoints(){

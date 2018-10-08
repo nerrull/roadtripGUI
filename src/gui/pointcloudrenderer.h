@@ -66,7 +66,7 @@ public:
 
     ofPolyline trail;
 
-    NodeParticleManager nodeParticles;
+//    NodeParticleManager nodeParticles;
 };
 
 #endif // POINTCLOUDRENDERER_H

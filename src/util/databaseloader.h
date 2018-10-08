@@ -14,9 +14,9 @@ public:
     const vector<vector<float>>* getFeatures();
     int getNumFeatures(){return num_features;}
 
-    string getRandomVideo(){
+    pair<string, int> getRandomVideo(){
         int randIndex = (int) ofRandom(0,video_names.size());
-        return video_names[randIndex];
+        return pair<string, int> (video_names[randIndex], randIndex);
     }
 
     vector<string>  getFeatureNames();
@@ -28,11 +28,15 @@ public:
     vector<float> getFeaturesFromName(string name);
     vector<float> getFeaturesFromindex(int index);
     int getVideoIndexFromName(string name);
+    float getVideoLength(int index);
+    vector<pair<string, int>> getVideoPairsFromIndexes(vector<int> indexes);
 
-    vector< string> feature_names;
-    vector< string> video_names;
+    vector<string> feature_names;
+    vector<string> video_names;
+    vector<float>  video_durations;
+
     vector<ofColor> colors;
-    vector< vector<float> > feature_values;
+    vector<vector<float> > feature_values;
     vector<ofVec2f> coordinates;
     vector<ofVec3f> dimension_reduction;
     vector<ofVec3f> dimension_reduction_2D;

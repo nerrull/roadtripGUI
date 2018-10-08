@@ -6,8 +6,12 @@ constexpr typename std::underlying_type<E>::type to_ut(E e) noexcept {
     return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
-FeatureControl::FeatureControl()
+FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms)
 {
+    this->dbl = dbl;
+    this->coms = coms;
+    this->fKNN = new FeatureKNN(dbl);
+
     Settings::get().load("settings.json");
     idleTimeout =  Settings::getInt("idle_timeout"); //seconds
     featureDecayRate = Settings::getFloat("feature_decay_sec")/60.;
@@ -27,14 +31,16 @@ FeatureControl::FeatureControl()
     targetFeatureValues.resize(num_features, 0.);
     featureActive.resize(num_features, false);
     lastFeatureWeights.resize(num_features, 0.);
+    videoCycleIndex = 0;
 
     //Make loudness the only active feature
     featureWeights[0]= 1.;
-}
+    playingVideo = pair<string, int>("Empty", -1);
+    videoMaxIndex = 5;
+    activityType = ActivityTypes::NONE;
+    activeFeatureIndex=0;
 
-void FeatureControl::initialize(DatabaseLoader *dbl){
-    fKNN.init(dbl);
-
+    toIdle();
 }
 
 void FeatureControl::updateState(){
@@ -127,20 +133,45 @@ void FeatureControl::toHumanActive(){
 
 void FeatureControl::setIdleFeature(int index){
     idleFeatureIndex = index;
-    for (int i = 0; i <featureWeights.size(); i++)
-    {
-        if (i!= idleFeatureIndex){
-            inactiveCounter[i] = idleTimeout*secondsToFrames;
-        }
-    }
-    featureWeights[idleFeatureIndex] = 1.;
-    updateActiveFeature(idleFeatureIndex);
+    targetFeatureValues[idleFeatureIndex] = 0.;
+    updateActiveFeature(idleFeatureIndex, 0.);
 }
 
 void FeatureControl::getNewVideos(){
-    fKNN.getKNN(targetFeatureValues, featureWeights);
-    videoIndexes = fKNN.getSearchResultIndexes();
+    fKNN->getKNN(targetFeatureValues, featureWeights);
+    videoIndexes = fKNN->getSearchResultsFixedNumber(videoMaxIndex);
+    videos = dbl->getVideoPairsFromIndexes(videoIndexes);
+
+    if (playingVideo.second != videos[0].second){
+        videoCycleIndex =0;
+        playingVideo =videos[0];
+        playVideo();
+    }
     update_video_flag = false;
+}
+
+void FeatureControl::playVideo(){
+    //Todo: Let main loop know
+    if (speedSetting == 0){
+        videoCycleTimer = dbl->getVideoLength(playingVideo.second);
+    }
+    videoStartTime = ofGetElapsedTimef();
+    coms->publishVideoNow( playingVideo.first, true);
+    updateFeatureValues(dbl->getFeaturesFromindex(playingVideo.second));
+}
+
+void FeatureControl::cycleVideo(){
+    videoCycleIndex = videoCycleIndex++%videoMaxIndex;
+    playingVideo = videos[videoCycleIndex];
+    if (shouldSlowdown()){
+        incrementSpeed(-1);
+    }
+    playVideo();
+}
+
+void FeatureControl::playRandomVideo(){
+    playingVideo= this->dbl->getRandomVideo();
+    playVideo();
 }
 
 void FeatureControl::update(){
@@ -154,6 +185,10 @@ void FeatureControl::update(){
     currentTime = ofGetElapsedTimef();
     idleTimeCounter = currentTime - lastActivityTime;
 
+    if (currentTime -videoStartTime > videoCycleTimer){
+        cycleVideo();
+    }
+
     updateState();
     input_activity_flag = false;
     lastFeatureWeights =featureWeights;
@@ -161,11 +196,11 @@ void FeatureControl::update(){
     switch (state){
     case HUMAN_ACTIVE:
         //Todo
-        updateFeatureTimers(false);
+        updateFeatureWeights(false);
         break;
 
     case IDLE:
-        updateFeatureTimers(true);
+        updateFeatureWeights(true);
         break;
 
     case IDLE_ACTIVE:
@@ -178,33 +213,34 @@ void FeatureControl::update(){
             }
             update_video_flag = true;
         }
-        updateFeatureTimers(true);
+        updateFeatureWeights(true);
 
         break;
     }
 }
 
-void FeatureControl::updateFeatureTimers(bool ignoreIdle){
+void FeatureControl::updateFeatureWeights(bool ignoreIdle){
     for (int i = 0; i <featureWeights.size(); i++){
         if (ignoreIdle){
             if (i ==idleFeatureIndex){
                 continue;
             }
         }
+
         if (featureWeights[i] >0.){
             inactiveCounter[i]+=1;
         }
 
-        //After 5 seconds of inactivity decrement the weight by 0.1 every 0.5 seconds
+        //After [idleTimeout] seconds of inactivity decrement the weight by 0.1 every 0.5 seconds
         if (inactiveCounter[i]>idleTimeout*secondsToFrames && featureWeights[i] >0){
             featureWeights[i] = CLAMP(featureWeights[i] - featureDecayRate, 0., 1.);
+            coms->sendLightControl(i+3, int(featureWeights[i]*4096));
         }
-
         else if (inactiveCounter[i]>idleTimeout*secondsToFrames && featureWeights[i] ==0.){
             featureActive[i]=false;
-            continue;
         }
     }
+
 }
 
 void FeatureControl::draw(){
@@ -218,18 +254,24 @@ void FeatureControl::draw(){
     oss.str("");
     oss << "" <<endl;
     oss << "Idle timer"<<endl;
-    oss << "Last Activity"<<endl;
+    oss << "Last Act."<<endl;
     oss << "Act. index" <<endl;
     oss << "Idle Index" <<endl;
+    oss << "Video name"<<endl;
+    oss << "Video index" <<endl;
     ofDrawBitmapString(oss.str(), 100,0);
 
     oss.str("");
-    oss << "Timings" <<endl;
+    oss << "Tnfo" <<endl;
     oss << idleTimeCounter <<endl;
     oss << lastActivityTime<<endl;
     oss << activeFeatureIndex <<endl;
     oss << idleFeatureIndex <<endl;
-    ofDrawBitmapString(oss.str(), 250,0);
+    oss << playingVideo.first <<endl;
+    oss << playingVideo.second <<endl;
+
+
+    ofDrawBitmapString(oss.str(), 200,0);
 
     oss.str("");
     oss << "Target" <<endl;
@@ -263,7 +305,6 @@ void FeatureControl::draw(){
 void FeatureControl::updateFeatureValues(vector<float> fv){
     lastFeatureValues = featureValues;
     featureValues = fv;
-
     for (int i =0; i <featureValues.size(); i++){
         if (!featureActive[i]){
             targetFeatureValues[i] = featureValues[i];
@@ -271,38 +312,38 @@ void FeatureControl::updateFeatureValues(vector<float> fv){
     }
 }
 
-
 void FeatureControl::incrementFeatureTarget(int index, float step){
-    updateActiveFeature(index);
+    updateActiveFeature(index, 1);
     targetFeatureValues[index] =CLAMP(targetFeatureValues[index]+step, 0., 1.);
 }
 
 void FeatureControl::toggleFeatureTarget(int index){
-    updateActiveFeature(index);
+    updateActiveFeature(index, 1);
     float v = targetFeatureValues[index];
     int target_value = 0.;
     if (v<.5) target_value = 1.;
     targetFeatureValues[index] =CLAMP(target_value, 0., 1.);
 }
 
-void FeatureControl::updateActiveFeature(int index){
+void FeatureControl::updateActiveFeature(int index, int timeoutOffset){
 
     featureActive[index]=true;
     featureWeights[index]=1.0;
     inactiveCounter[index] = 0;
     update_video_flag =true;
 
-    // If we've already activated the index we exit here
-    if (activeFeatureIndex == index){
-        return;
-    }
+    //Set light to max
+    coms->sendLightControl(index+3, 4096);
 
     //Timeout the other features
     for(int i=0; i<this->inactiveCounter.size(); i++){
         if (i ==index )continue;
-        //Give other active features one second before they decay
+        //Set other active feautres to timeout limit - offset
         else if (featureActive[index]){
-            inactiveCounter[i] = idleTimeout*secondsToFrames - 1*secondsToFrames;
+            int thresh = idleTimeout*secondsToFrames - timeoutOffset*secondsToFrames;
+            if (inactiveCounter[i] < thresh){
+                inactiveCounter[i] = thresh;
+            }
         }
     }
 }
@@ -311,20 +352,30 @@ void FeatureControl::registerInputActivity(){
     input_activity_flag = true;
 }
 
-bool FeatureControl::shouldSlowdown(int speedSetting){
+bool FeatureControl::shouldSlowdown(){
     if (state ==IDLE){
         if (speedSetting >0){
-            if (currentTime -slowdownTime >0.5){
-                slowdownTime = currentTime;
-                return true;
-            }
+            return true;
         }
     }
     return false;
 }
 
 int FeatureControl::incrementSearchRadius(int step){
-    int nv=  CLAMP(this->fKNN.numVideos+step, 1, 50);
-    this->fKNN.setNumVideos(nv);
-    return nv;
+    videoMaxIndex =  CLAMP(videoMaxIndex+step, 1, 32);
+    return videoMaxIndex;
+}
+
+void FeatureControl::incrementSpeed(int step){
+    setSpeed( CLAMP(speedSetting-step, 0, 15));
+}
+
+void FeatureControl::setSpeed(int value){
+    speedSetting = value;
+    videoCycleTimer = SPEEDS[speedSetting];
+    //todo :
+    //Update speed gui element
+    //featureGuiElements[0]->setValue(float(speed));
+
+    playVideo();
 }

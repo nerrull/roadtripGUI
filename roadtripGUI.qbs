@@ -13,6 +13,8 @@ Project{
 
         files: [
             "src/gui/curveline.h",
+            "src/gui/elements/durationElement.h",
+            "src/gui/elements/tiltelement.h",
             "src/gui/physicalline.h",
             "src/gui/pointcloudrenderer.cpp",
             "src/gui/pointcloudrenderer.h",
@@ -39,7 +41,6 @@ Project{
             "src/gui/elements/colorcircle.cpp",
             "src/gui/elements/circlefeatureguielement.h",
             "src/gui/elements/circlefeatureguielement.cpp",
-            "src/gui/elements/fillcircle.h",
             "src/gui/elements/searchradiuselement.h",
             "src/gui/elements/uielements.h",
             "src/main.cpp",

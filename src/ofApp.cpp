@@ -32,9 +32,10 @@ void ofApp::setup(){
     ofSetLogLevel(OF_LOG_NOTICE);
 
     numKnobs =23;
-    search_timer =ofGetElapsedTimeMillis();
+    log_timer =ofGetElapsedTimeMillis();
     databaseLoader.loadHDF5Data(db_path);
-    fc.initialize(&databaseLoader);
+
+    fc =new FeatureControl(&databaseLoader, &coms);
     
     if (Settings::getInt("point_mode") ==0){
         pointCloudRender.setRotation(false);
@@ -82,6 +83,7 @@ void ofApp::setup(){
     speedSetting =0;
     currentPlayingVideo ="";
 
+    //Initialize lights
     for(int i =0; i < num_features;i++){
         coms.sendLightControl(i+3, 0);
     }
@@ -239,7 +241,7 @@ void ofApp::update(){
 
     //Log incoming and outgoing messages
     uint64_t currentTime = ofGetElapsedTimeMillis();
-    if ((currentTime - search_timer)>1000)
+    if ((currentTime - log_timer)>1000)
     {
         ofLogNotice()<<"Received " <<incomingControllerMessageCounter<< " OSC messages from controller in the last second"<<endl;
         ofLogNotice()<<"Received " <<incomingPlayerMessageCounter<< " OSC messages from player in the last second"<<endl;
@@ -248,75 +250,39 @@ void ofApp::update(){
         incomingPlayerMessageCounter =0;
     }
 
-    pointCloudRender.update();
-    fc.update();
-    videoIndexes =fc.getVideoIndexes();
-
-    pointCloudRender.setActiveNodes(videoIndexes);
-    vector<string> videoNames = databaseLoader.getVideoNamesFromIndexes(videoIndexes);
-
-    //Every 100 ms
-    if ((currentTime - search_timer)>100){
-        search_timer =currentTime;
-
-        if (fc.state == FeatureControl::HUMAN_ACTIVE){
-            if (videoNames.size() > 0){
-                if (currentPlayingVideo != videoNames[0]){
-                    coms.publishVideoNow( videoNames[0], true);
-                    currentPlayingVideo = videoNames[0];
-                    lastVideos.clear();
-                    lastVideos.push_back(videoNames[0]);
-                }
-            }
-
-        }
-        else if (!vectorsAreEqual(videoNames, lastVideos) && videoNames.size()>0){
-            coms.publishVideos(videoNames, true);
-            lastVideos = videoNames;
-        }
-    }
-
     //Update active features
+    fc->update();
 
-    fc.update();
+    videoIndexes =fc->getVideoIndexes();
+    pointCloudRender.setActiveNodes(videoIndexes);
+    pointCloudRender.update();
 
-    if (fc.shouldSlowdown(speedSetting) ){
-        speedSetting -=1;
-        speedChanged = true;
-    }
+    pair<string,int> playingVideo = fc->getPlayingVideo();
+    imageManager.loadImages(playingVideo.first);
+    pointCloudRender.setPlayingNode(playingVideo.second);
+
 
     //Send messages to player if speed changed
-    if (speedChanged){
-        coms.publishSpeed(speedSetting);
-        speedChanged = false;
-        int speed = SPEEDS[speedSetting];
-        if (speed == -1) speed = playingFileDuration;
-        featureGuiElements[0]->setValue(float(speed));
+//    featureGuiElements[0]->setValue(float(speed));
 
-    }
 
     //Send message to lights if features change
-    for (int i = 0; i <fc.numFeatures(); i++)
-    {
-        if (fc.weightChanged(i)){
-            coms.sendLightControl(i+3, int(fc.getWeights()[i]*4096));
-        }
-    }
 
     //Update gui elements
+    waveform.update();
     featureGuiElements[0]->update(); //Update speed timer
     featureGuiElements[1]->update(); //Update search radius
 
-    for (int i = 0; i <fc.numFeatures(); i++){
+    for (int i = 0; i <fc->numFeatures(); i++){
         //Do some interpolation on the value
-        float diff = fc.getValueDiff(i);
+        float diff = fc->getValueDiff(i);
         float inc = sgn(diff)*diff*diff;
-        fc.incrementLastFeatureValue(i,inc);
+        fc->incrementLastFeatureValue(i,inc);
 
-        featureGuiElements[i+2]->setWeight(fc.getWeight(i));
-        featureGuiElements[i+2]->setValue(fc.getLastValue(i));
-        featureGuiElements[i+2]->setTarget(fc.getTargetValue(i));
-        featureGuiElements[i+2]->setActive(fc.getActive(i));
+        featureGuiElements[i+2]->setWeight(fc->getWeight(i));
+        featureGuiElements[i+2]->setValue(fc->getLastValue(i));
+        featureGuiElements[i+2]->setTarget(fc->getTargetValue(i));
+        featureGuiElements[i+2]->setActive(fc->getActive(i));
     }
 }
 
@@ -351,7 +317,7 @@ void ofApp::drawDebug(){
     oss <<endl;
     ofDrawBitmapString(oss.str(),0,0);
     ofTranslate(30,0);
-    fc.draw();
+    fc->draw();
     ofPopMatrix();
 
 }
@@ -403,35 +369,17 @@ void ofApp::keyPressed(int key){
     }
 }
 
-
 void ofApp::playRandomVideo(){
-    updatePlayingVideo(databaseLoader.getRandomVideo());
-    coms.publishVideoNow( currentPlayingVideo, true);
+    fc->playRandomVideo();
 }
 
-void ofApp::updatePlayingVideo(string video){
-    currentPlayingVideo = video;
-    int videoIndex = databaseLoader.getVideoIndexFromName(currentPlayingVideo);
 
-    imageManager.loadImages(currentPlayingVideo);
-    fc.updateFeatureValues( databaseLoader.getFeaturesFromName(currentPlayingVideo));
-    pointCloudRender.setPlayingNode(videoIndex);
-}
-
-void ofApp::incrementSpeed(int step){
-    speedSetting=  CLAMP(speedSetting-step, 0, 18);
-    speedChanged =true;
-}
 
 void ofApp::incrementSearchRadius(int step){
-    int nv= this->fc.incrementSearchRadius(step);
+    int nv= this->fc->incrementSearchRadius(step);
     this->featureGuiElements[1]->setValue(nv);
 }
 
-void ofApp::setSpeed(int value){
-    speedSetting=  CLAMP(value, 0, 8);
-    speedChanged =true;
-}
 
 void ofApp::updateOSC() {
     // hide old messages
@@ -442,7 +390,7 @@ void ofApp::updateOSC() {
         coms.receiver_playing.getNextMessage( m );
         if ( m.getAddress().compare( string("/PLAYING_VIDEO") ) == 0 )
         {
-            updatePlayingVideo(m.getArgAsString(0));
+            //fc->updatePlayingVideo(m.getArgAsString(0));
             playingFileDuration = m.getArgAsInt64(1);
 
             if (this->speedSetting ==-1){
@@ -501,17 +449,17 @@ void ofApp::handlePythonMessages(){
             for (int i =0; i<23;i++){
                 float diff =  m.getArgAsFloat(i);
                 if (abs(diff) >0){
-                    fc.registerInputActivity();
+                    fc->registerInputActivity();
 
                     if (i ==0){
-                        incrementSpeed(diff);
+                        fc->incrementSpeed(diff);
                     }
                     if (i ==1){
                         incrementSearchRadius(diff*100);
                     }
 
                     if (i> 1){
-                        fc.incrementFeatureTarget( i-2,  diff);
+                        fc->incrementFeatureTarget( i-2,  diff);
                     }
                 }
             }
@@ -521,9 +469,9 @@ void ofApp::handlePythonMessages(){
         if ( m.getAddress().compare( string("/SET_SPEED") ) == 0 )
         {
             int speed=  m.getArgAsInt(0);
-            fc.registerInputActivity();
+            fc->registerInputActivity();
 
-            setSpeed(speed);
+            fc->setSpeed(speed);
             ofLogError(ofToString(ofGetElapsedTimef(),3)) << "SET_SPEED Message received" ;
         }
         else
@@ -537,13 +485,13 @@ void ofApp::handlePythonMessages(){
 void ofApp::handleKnobInput(ofxOscMessage m){
     //    ofLogDebug(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
     int i = m.getArgAsInt(0);
-    fc.registerInputActivity();
+    fc->registerInputActivity();
 
     if (i ==1){
         int step =m.getArgAsInt(1);
         if (step ==0) step = -1;
 
-        incrementSpeed(step);
+        fc->incrementSpeed(step);
         return;
     }
 
@@ -556,15 +504,15 @@ void ofApp::handleKnobInput(ofxOscMessage m){
 
     i =i-3;
     float step = (float(m.getArgAsInt(1)) -0.5)*2/50.;
-    fc.incrementFeatureTarget(i, step);
+    fc->incrementFeatureTarget(i, step);
 }
 
 void ofApp::handleButtonInput(int index){
     //    ofLogDebug(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
-    fc.registerInputActivity();
+    fc->registerInputActivity();
 
     if (index ==1){
-        setSpeed(0);
+        fc->setSpeed(0);
         return;
     }
 
@@ -574,7 +522,7 @@ void ofApp::handleButtonInput(int index){
     }
 
     index =index-3;
-    fc.toggleFeatureTarget(index);
+    fc->toggleFeatureTarget(index);
 }
 
 

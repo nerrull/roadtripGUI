@@ -103,20 +103,16 @@ void ConnectionGraph::recursiveGetPairs(int current_index, vector<bool>& passed_
 
 
 
-FeatureKNN::FeatureKNN()
+FeatureKNN::FeatureKNN(DatabaseLoader *database)
 {
-
+    db = database;
+    minVideos =1;
+    initPoints();
+//    createFeatureGroups();
 }
-
 
 void FeatureKNN::updateSearchRadius(float v){
     threshold_distance = v;
-}
-
-void FeatureKNN::init(DatabaseLoader *database){
-    db = database;
-    createFeatureGroups();
-    initPoints();
 }
 
 vector<float> getFeatureColumn(vector<vector<float>> featureValues, int columnIndex){
@@ -213,14 +209,6 @@ void FeatureKNN::update(){
     ofLogNotice() <<"Point cloud tree search does nothing on update?"<<endl;
 }
 
-void FeatureKNN::setMinVideos(int min){
-    this->minVideos = min;
-}
-
-
-void FeatureKNN::setNumVideos(int n){
-    this->numVideos = n;
-}
 vector<vector<float>> FeatureKNN::getPointFeatureDistances(const vector<float> search_point, const vector<float> index_weights){
 
     int num_features = db->feature_values[0].size();
@@ -256,21 +244,11 @@ void FeatureKNN::getKNN(vector<float> search_point, vector<float> search_weights
 {
     vector<double> double_point(search_point.begin(),search_point.end());
     vector<double> double_weights(search_weights.begin(),search_weights.end());
-    kdTree.getWeightedKNN(double_point, targetNumberOfPoints, search_indexes, search_dists, double_weights);
+    kdTree.getWeightedKNN(double_point, numSearchPoints, search_indexes, search_dists, double_weights);
 }
 
-
-vector<int> FeatureKNN::getSearchResultIndexes(){
+vector<int> FeatureKNN::getSearchResultsDistance(){
     active_indexes.clear();
-
-    if (numVideos !=-1){
-        for (int i = 0; i<numVideos; i++){
-            float v = search_dists[i];
-            active_indexes.push_back(search_indexes[i]);
-        }
-        return active_indexes;
-    }
-
     int n_v =0;
     for (std::size_t i = 0; i < search_indexes.size(); i++)
     {
@@ -288,6 +266,16 @@ vector<int> FeatureKNN::getSearchResultIndexes(){
         }
     }
 
+    return active_indexes;
+
+}
+
+vector<int> FeatureKNN::getSearchResultsFixedNumber(int numVideos){
+    active_indexes.clear();
+    for (int i = 0; i<numVideos; i++){
+            float v = search_dists[i];
+            active_indexes.push_back(search_indexes[i]);
+        }
     return active_indexes;
 }
 

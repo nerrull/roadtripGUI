@@ -4,11 +4,30 @@
 #include "ofMain.h"
 #include "util/featureKNN.h"
 #include "util/databaseloader.h"
+#include "util/communication.h"
+
+
+/*    IdleFeatures{
+        AMPLITUDE = 0,
+        SPEED =4,
+        STABILITY = 5,
+        RPM = 6,
+    };
+    IdleActiveFeatures{
+        AMPLITUDE = 0,
+        Spectral Centroid =1,
+        Vehicle speed = 4,
+        RPM =6,
+        LIGHTNESS = 11,
+        UNCERTAINTY = 12,
+        VEGETATION = 17
+    }
+*/
 
 class FeatureControl
 {
 public:
-    FeatureControl();
+    FeatureControl(DatabaseLoader *, CommunicationManager*);
 
     string stateStrings [3]= {"IDLE", "IDLE_ACTIVE", "HUMAN_ACTIVE"};
     enum BehaviourState{
@@ -38,22 +57,6 @@ public:
         last = RANDOM_TIMINGS
     };
 
-/*    IdleFeatures{
-        AMPLITUDE = 0,
-        SPEED =4,
-        STABILITY = 5,
-        RPM = 6,
-    };
-    IdleActiveFeatures{
-        AMPLITUDE = 0,
-        Spectral Centroid =1,
-        Vehicle speed = 4,
-        RPM =6,
-        LIGHTNESS = 11,
-        UNCERTAINTY = 12,
-        VEGETATION = 17
-    }
-*/
 
     int secondsToFrames = 60.;
 
@@ -64,18 +67,23 @@ public:
 
     BehaviourState state;
     ActivityTypes activityType;
-    FeatureKNN fKNN;
+    FeatureKNN* fKNN;
+    DatabaseLoader* dbl;
+    CommunicationManager* coms;
+
     void initialize(DatabaseLoader * dbl);
     void update();
-    void updateFeatureValues(vector<float> fv);
+
     void incrementFeatureTarget(int index, float step);
     void toggleFeatureTarget(int index);
-    void updateActiveFeature(int index);
-    bool shouldSlowdown(int speedSetting);
+    void updateActiveFeature(int index,int timeoutOffset);
+    bool shouldSlowdown();
     void registerInputActivity();
     void draw();
-    void getNewVideos();
+    void playRandomVideo();
     int incrementSearchRadius(int step);
+    void incrementSpeed(int step);
+    void setSpeed(int speed);
 
     vector<float> getValues(){
         return featureValues;
@@ -123,20 +131,27 @@ public:
     void incrementLastFeatureValue(int index, float inc){
         lastFeatureValues[index]+=inc;
     }
-
+     pair<string, int> getPlayingVideo(){
+        return playingVideo;
+    }
     vector<int> getVideoIndexes(){return videoIndexes;}
 
-
 private:
-
     //State functions
     void updateState();
     void toIdle();
     void toIdleActive();
     void toHumanActive();
-    void setIdleFeature(int index);
-    void updateFeatureTimers(bool ignoreIdle);
 
+    //Update feature functions
+    void setIdleFeature(int index);
+    void updateFeatureWeights(bool ignoreIdle);
+    void updateFeatureValues(vector<float> fv);
+
+    //Video search/playback functions
+    void getNewVideos();
+    void playVideo();
+    void cycleVideo();
 
     //Timeout parameters
     float featureTimeout;
@@ -144,7 +159,6 @@ private:
     float idleActivityInterval;
     float idleActivityDuration;
     float idleTimeout;
-
 
     int idleActivityNumUpdates;
     deque<float> idleActivityValues;
@@ -154,9 +168,10 @@ private:
     float lastActivityTime;
     float idleTimeCounter;
     float idleActivatedTime;
+    float videoCycleTimer;
+    float videoStartTime;
 
     float slowdownTime;
-
     float currentTime;
 
     //Feature indexes
@@ -176,6 +191,18 @@ private:
 
     vector<float> featureWeights;
     vector<float> lastFeatureWeights;
+
+    vector<pair<string, int>> videos;
+    pair<string, int> playingVideo;
+
+    int videoCycleIndex;
+    int videoMaxIndex;
+    int speedSetting;
+
+    int SPEEDS [15]= {-1, 4000, 3000, 2000, 1500, 1000, 500,400, 333, 250, 200, 125, 100, 63, 33};
+    string SPEEDSTRINGS [15]= {"MAX", "4", "3", "2", "1.5", "1", "1/2","1/3","1/4","1/5", "1/8","1/10", "1/12", "1/16", "1/32"};
+
+
 
 };
 

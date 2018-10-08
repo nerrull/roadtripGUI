@@ -29,7 +29,13 @@ void ImageManager::setLayout(int x, int y, int w, int h){
 void ImageManager::loadImages(string fileName){
     if (DEV_MODE) return;
 
+    //If already laoded, continue
+    if (fileName.compare( currentFileName) ==0){
+         return;
+    }
+
     currentFileName = fileName;
+
     string frameName= fileName + ".png";
     string segnetName = fileName + "_segnet.png";
     string uncertaintyName = fileName + "_uncertainty.png";

@@ -53,8 +53,7 @@ private:
 class FeatureKNN
 {
 public:
-    FeatureKNN();
-    void init(DatabaseLoader*);
+    FeatureKNN(DatabaseLoader*);
     void update();
     void updateSearchRadius(float v);
     void updateSearchSpace(vector<float> desiredValues, vector<float> activeIndexes);
@@ -62,20 +61,19 @@ public:
     ConnectionGraph getLocalConnections(int featureIndex);
 
     void getKNN(vector<float> search_point, vector<float> search_weights);
-    vector<int> getSearchResultIndexes();
+    vector<int> getSearchResultsFixedNumber(int);
+    vector<int> getSearchResultsDistance();
+
 
     void setPlayingIndex(int);
     void setMinVideos(int);
-    void setNumVideos(int);
 
     int curveIterCount = 0;
 
     int num_points;
     int playingIndex =0;
-    int targetNumberOfPoints = 50;
+    int numSearchPoints = 100;
     int minVideos = 1;
-    int numVideos = -1;
-
     float threshold_distance = 0.05;
 
 

@@ -8,7 +8,6 @@
 #include "gui/pointcloudrenderer.h"
 #include "gui/elements/uielements.h"
 #include "util/databaseloader.h"
-#include "util/communication.h"
 #include "util/featurecontrol.h"
 
 class ofApp : public ofBaseApp{
@@ -69,11 +68,12 @@ public:
     SegnetColourInspector colourInspector;
     AudioWaveform waveform;
     DatabaseLoader databaseLoader;
+    CommunicationManager coms;
     PointCloudRenderer pointCloudRender;
-    FeatureControl fc;
+    FeatureControl* fc;
+
     vector<unique_ptr<CircleFeatureGuiElement>> featureGuiElements;
 
-    CommunicationManager coms;
     ofTrueTypeFont font;
     ofSoundStream soundStream;
 
@@ -100,13 +100,12 @@ public:
     bool DEV_MODE;
     bool languageIsEnglish;
 
-    uint64_t search_timer;
+    uint64_t log_timer;
 
     int speedSetting;
     string currentPlayingVideo;
     vector<string> lastVideos;
 
-    int SPEEDS [19]= {-1, 4000, 3000, 2000, 1500, 1000,900,800,700,600, 500,400, 300, 250, 200, 150, 100, 66, 33};
 
 
 };

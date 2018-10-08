@@ -4,7 +4,6 @@
 #endif // COMMUNICATION_H
 #include "ofMain.h"
 #include "ofxOsc.h"
-#include "ofApp.h"
 
 #define PLAYING_RECEIVE_PORT 44445
 #define PYTHON_CONTROL_RECEIVE_PORT 44444

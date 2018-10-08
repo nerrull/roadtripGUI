@@ -117,8 +117,15 @@ void DatabaseLoader::loadHDF5Data(string database_path){
         std::copy(characters +row*STRING_LENGTH,characters +(row+1)*STRING_LENGTH,name );
         video_names.push_back(name);
     }
-    hdf5File.close();
 
+    ofxHDF5DataSetPtr duration_ptr= hdf5File.loadDataSet("video_durations");
+    num_videos = duration_ptr->getDimensionSize(0);
+    float *durationValues= new float[num_videos];
+    duration_ptr->read(durationValues);
+    for( int row =0; row<num_videos; row++){
+        video_durations.push_back(durationValues[row]);
+    }
+    hdf5File.close();
 }
 
 const vector<vector<float>>* DatabaseLoader::getFeatures(){
@@ -140,6 +147,16 @@ vector<string>   DatabaseLoader::getVideoNamesFromIndexes(vector<int> indexes){
         names.push_back(video_names[indexes[i]]);
     }
     return names;
+}
+
+vector<pair<string, int>> DatabaseLoader::getVideoPairsFromIndexes(vector<int> indexes){
+    vector<string>  names = getVideoNamesFromIndexes(indexes);
+    vector<pair<string, int>>  pairs;
+    for (std::size_t i = 0; i < indexes.size(); i++)
+    {
+        pairs.push_back(pair<string, int>(names[i], indexes[i]));
+    }
+    return pairs;
 }
 
 vector<float>  DatabaseLoader::getFeaturesFromName(string name){
@@ -165,4 +182,8 @@ int DatabaseLoader::getVideoIndexFromName(string name){
 
 vector<ofVec2f> DatabaseLoader::getCoordinates(){
     return this->coordinates;
+}
+
+float DatabaseLoader::getVideoLength(int index){
+    return this->video_durations[index];
 }
