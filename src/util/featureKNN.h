@@ -4,6 +4,7 @@
 #include "ofMain.h"
 #include "util/databaseloader.h"
 #include "ofxKDTree.h"
+#include <random>
 
 
 
@@ -62,7 +63,7 @@ public:
 
     void getKNN(vector<float> search_point, vector<float> search_weights);
     vector<int> getSearchResultsFixedNumber(int);
-    vector<int> getSearchResultsDistance();
+    vector<int> getSearchResultsDistance(bool shuffle = false);
 
 
     void setPlayingIndex(int);
@@ -91,7 +92,7 @@ private:
     ofxKDTree kdTree;
     vector<size_t> search_indexes;
     vector<double> search_dists;
-
+    std::default_random_engine rng;
 
 };
 

@@ -13,10 +13,10 @@ PointCloudRenderer::PointCloudRenderer()
 
 
 void PointCloudRenderer::setLayout(int x, int y, int w, int h){
-    viewMain.x=x;
-    viewMain.y = y;
-    viewMain.width = w;
-    viewMain.height =h;
+    viewMain.x = x+2;
+    viewMain.y = y+2;
+    viewMain.width = w-3;
+    viewMain.height =h-3;
     cam.setPosition(ofVec3f(0.,0.,100.));
     cam.lookAt(ofVec3f(0,0,0));
     cam.setDistance(100);
@@ -175,10 +175,12 @@ void PointCloudRenderer::draw()
 
     ofPopMatrix();
     cam.end();
-    ofSetLineWidth(1);
-    ofDrawRectangle(viewMain);
+    ofSetLineWidth(2);
+    ofDrawRectangle(viewMain.x -1, viewMain.y-2, viewMain.width+1, viewMain.height+3);
 
 }
+
+
 
 
 void PointCloudRenderer::meshFromConnections(vector<NodeConnection> connections){

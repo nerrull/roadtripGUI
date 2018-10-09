@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.6.1, 2018-10-07T22:32:36. -->
+<!-- Written by QtCreator 4.6.1, 2018-10-09T14:53:53. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
-  <value type="QByteArray">{ce48363b-ce70-42a0-8a59-8d9959bcfaca}</value>
+  <value type="QByteArray">{3b45eb3c-cf09-4668-ab01-ccfbf47947c1}</value>
  </data>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
@@ -61,12 +61,12 @@
   <valuemap type="QVariantMap">
    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Desktop</value>
    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Desktop</value>
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">{ca8f2ac8-cb9a-4693-9fca-ff57600aefb2}</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">{68b4e6bd-ed65-49dd-8734-bd554f48b401}</value>
    <value type="int" key="ProjectExplorer.Target.ActiveBuildConfiguration">0</value>
    <value type="int" key="ProjectExplorer.Target.ActiveDeployConfiguration">0</value>
    <value type="int" key="ProjectExplorer.Target.ActiveRunConfiguration">0</value>
    <valuemap type="QVariantMap" key="ProjectExplorer.Target.BuildConfiguration.0">
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/rice1902/Development/of_v0.10.0_linux64gcc5_release/apps/myApps/build-roadtripGUI-Desktop-Debug</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/nuc/Documents/of_v0.10.0_linux64gcc6_release/apps/myApps/build-roadtripGUI-Desktop-Debug</value>
     <valuemap type="QVariantMap" key="ProjectExplorer.BuildConfiguration.BuildStepList.0">
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
       <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
@@ -76,13 +76,13 @@
       <value type="bool" key="Qbs.CleanInstallRoot">false</value>
       <valuemap type="QVariantMap" key="Qbs.Configuration">
        <value type="QString" key="qbs.defaultBuildVariant">debug</value>
-       <value type="QString" key="qbs.profile">qtc_Desktop_6a0e0037</value>
+       <value type="QString" key="qbs.profile">qtc_Desktop_32ddc076</value>
        <value type="bool" key="qbspm.forceProbes">false</value>
       </valuemap>
       <value type="bool" key="Qbs.DryKeepGoing">false</value>
       <value type="bool" key="Qbs.DryRun">false</value>
       <value type="bool" key="Qbs.Install">true</value>
-      <value type="int" key="Qbs.MaxJobs">4</value>
+      <value type="int" key="Qbs.MaxJobs">8</value>
       <value type="bool" key="Qbs.ShowCommandLines">false</value>
       <value type="bool" key="Qbs.enableQmlDebuggingKey">false</value>
       <value type="bool" key="Qbs.forceProbesKey">false</value>
@@ -115,7 +115,7 @@
     <value type="QString" key="Qbs.configName">qtc_Desktop_Debug</value>
    </valuemap>
    <valuemap type="QVariantMap" key="ProjectExplorer.Target.BuildConfiguration.1">
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/rice1902/Development/of_v0.10.0_linux64gcc5_release/apps/myApps/build-roadtripGUI-Desktop-Release</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/nuc/Documents/of_v0.10.0_linux64gcc6_release/apps/myApps/build-roadtripGUI-Desktop-Release</value>
     <valuemap type="QVariantMap" key="ProjectExplorer.BuildConfiguration.BuildStepList.0">
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
       <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
@@ -125,13 +125,13 @@
       <value type="bool" key="Qbs.CleanInstallRoot">false</value>
       <valuemap type="QVariantMap" key="Qbs.Configuration">
        <value type="QString" key="qbs.defaultBuildVariant">release</value>
-       <value type="QString" key="qbs.profile">qtc_Desktop_6a0e0037</value>
+       <value type="QString" key="qbs.profile">qtc_Desktop_32ddc076</value>
        <value type="bool" key="qbspm.forceProbes">false</value>
       </valuemap>
       <value type="bool" key="Qbs.DryKeepGoing">false</value>
       <value type="bool" key="Qbs.DryRun">false</value>
       <value type="bool" key="Qbs.Install">true</value>
-      <value type="int" key="Qbs.MaxJobs">4</value>
+      <value type="int" key="Qbs.MaxJobs">8</value>
       <value type="bool" key="Qbs.ShowCommandLines">false</value>
       <value type="bool" key="Qbs.enableQmlDebuggingKey">false</value>
       <value type="bool" key="Qbs.forceProbesKey">false</value>
@@ -197,7 +197,7 @@
     <value type="int" key="Analyzer.Valgrind.NumCallers">25</value>
     <valuelist type="QVariantList" key="Analyzer.Valgrind.RemovedSuppressionFiles"/>
     <value type="int" key="Analyzer.Valgrind.SelfModifyingCodeDetection">1</value>
-    <value type="bool" key="Analyzer.Valgrind.Settings.UseGlobalSettings">false</value>
+    <value type="bool" key="Analyzer.Valgrind.Settings.UseGlobalSettings">true</value>
     <value type="bool" key="Analyzer.Valgrind.ShowReachable">false</value>
     <value type="bool" key="Analyzer.Valgrind.TrackOrigins">true</value>
     <value type="QString" key="Analyzer.Valgrind.ValgrindExecutable">valgrind</value>
@@ -226,7 +226,7 @@
     <value type="QString" key="Qbs.RunConfiguration.CommandLineArguments"></value>
     <value type="bool" key="Qbs.RunConfiguration.UsingLibraryPaths">true</value>
     <value type="QString" key="Qbs.RunConfiguration.WorkingDirectory"></value>
-    <value type="QString" key="Qbs.RunConfiguration.WorkingDirectory.default">/home/rice1902/Development/of_v0.10.0_linux64gcc5_release/apps/myApps/roadtripGUI/bin</value>
+    <value type="QString" key="Qbs.RunConfiguration.WorkingDirectory.default">/home/nuc/Documents/of_v0.10.0_linux64gcc6_release/apps/myApps/roadtripGUI/bin</value>
     <value type="uint" key="RunConfiguration.QmlDebugServerPort">3768</value>
     <value type="bool" key="RunConfiguration.UseCppDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>

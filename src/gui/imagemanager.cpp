@@ -56,7 +56,7 @@ void ImageManager::draw(){
    ofSetColor(255);
    ofTranslate(xOffset,yOffset);
    //ofDrawBitmapString(currentFileName, 15, 15);
-   ofSetLineWidth(1);
+   ofSetLineWidth(2);
    ofNoFill();
 
    if (!loaded){

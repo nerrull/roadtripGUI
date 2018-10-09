@@ -2,14 +2,13 @@
 #define CIRCLEFEATUREGUIELEMENT_H
 
 #include "ofMain.h"
-
+#include "ofxFatLine.h"
 class CircleFeatureGuiElement
 {
 public:
     CircleFeatureGuiElement();
     CircleFeatureGuiElement(int w, int h, int xOffset, int yOffset);
 
-    void drawName();
     void setName(string n);
     void setTextOnTop(bool);
     void setCircleOffset(int);
@@ -17,11 +16,16 @@ public:
     void setWeightColors(ofColor c1, ofColor c2);
 
     virtual void draw();
+    virtual void drawFill();
+    virtual void drawShell();
+    virtual void drawText();
+
+
     virtual void setRange(int range);
     virtual void setPosition(int x, int y);
     virtual void setSize(int w, int h);
     virtual void setWeight(float w){currentWeight = w;}
-    virtual void setValue(float v){currentValue = v;}
+    virtual void setValue(float v);
     virtual void setValue(int v){currentValue = v;}
 
     virtual void setTarget(float v){targetValue = v;}
@@ -33,18 +37,23 @@ public:
     virtual void reset(){}
 
 
-
-
 protected:
+    ofxFatLine fillLine;
+    ofPolyline fillArc;
     ofPolyline exteriorPath;
     ofPolyline interiorPath;
+
 
     int xOffset, yOffset;
     int width, height;
     int rotationMin, rotationMax, rotationRange;
     int circleOffset;
+    int fillWidth;
+    int fillOffset;
     float circleOuterRadius;
-    float circleInteriorRadius;
+    float circleInnerRadius;
+    float fillRadius;
+
 
     float textOffset;
     float currentValue;
@@ -57,6 +66,9 @@ protected:
     ofColor weightCircleColor;
     ofColor secondWeightCircleColor;
     bool dualColor;
+
+    void translateToCenter();
+    virtual void updateFillLine();
 
 
 };

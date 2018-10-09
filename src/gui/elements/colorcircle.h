@@ -9,8 +9,10 @@ class ColorCircle: public CircleFeatureGuiElement
 public:
     ColorCircle();
 
-    void draw();
+    void drawFill();
     void setValue(float);
+    void updateFillLine();
+    void setSize(int w, int h);
     void setColorLimits(float, float);
 
     ofColor currentColor;

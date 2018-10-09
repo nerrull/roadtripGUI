@@ -9,23 +9,37 @@ public:
         setRange(360);
     }
 
-    void draw(){
-        ofSetLineWidth(2);
+    void drawText(){
+        CircleFeatureGuiElement::drawText();
+        ofPushMatrix();
+        ofPushStyle();
+        translateToCenter();
+        //Draw inner text
+        string number = std::to_string(this->num_neighbours);
+        float w = font.stringWidth(number);
+        float h = font.stringHeight(number);
 
+        font.drawString(number,-w/2,h/2);
+
+
+        ofPopStyle();
+        ofPopMatrix();
+    }
+
+    void draw(){
        ofPushMatrix();
+       ofPushStyle();
+
+       ofSetLineWidth(2);
        ofTranslate(xOffset, yOffset);
-       drawName();
        ofTranslate(0, circleOffset);
        ofTranslate(width/2, height/2);
        ofSetColor(255);
        ofNoFill();
        ofDrawCircle(0,0, currentRadius);
-       string number = std::to_string(this->num_neighbours);
-       float w = font.stringWidth(number);
-       float h = font.stringHeight(number);
 
-       font.drawString(number,-w/2,h/2);
 
+       ofPopStyle();
        ofPopMatrix();
 
 

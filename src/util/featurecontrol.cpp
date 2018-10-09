@@ -6,17 +6,20 @@ constexpr typename std::underlying_type<E>::type to_ut(E e) noexcept {
     return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
-FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms)
+FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,vector<unique_ptr<CircleFeatureGuiElement>> *guiElements)
 {
     this->dbl = dbl;
     this->coms = coms;
+    this->fge = guiElements;
     this->fKNN = new FeatureKNN(dbl);
 
     Settings::get().load("settings.json");
     idleTimeout =  Settings::getInt("idle_timeout"); //seconds
     featureDecayRate = Settings::getFloat("feature_decay_sec")/60.;
     idleActivityInterval = Settings::getFloat("idle_activity_interval"); //seconds
-    idleActivityDuration= Settings::getFloat("idle_activity_duration"); //seconds
+    idleActivityTransitionDuration= Settings::getFloat("idle_activity_transition_duration"); //seconds
+    idleActivityEndpointDuration= Settings::getFloat("idle_activity_endpoint_duration"); //seconds
+
     idleActivityNumUpdates= Settings::getInt("idle_activity_num_updates"); //seconds
 
     state = IDLE;
@@ -39,8 +42,9 @@ FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms)
     videoMaxIndex = 5;
     activityType = ActivityTypes::NONE;
     activeFeatureIndex=0;
-
+    setSpeed(0);
     toIdle();
+
 }
 
 void FeatureControl::updateState(){
@@ -67,7 +71,7 @@ void FeatureControl::updateState(){
             toHumanActive();
             break;
         }
-        else if ((currentTime - idleActivatedTime) >idleActivityDuration){
+        else if ((currentTime - idleActivatedTime) > (idleActivityTransitionDuration +idleActivityEndpointDuration)){
             activityType = ActivityTypes::NONE;
             toIdle();
         }
@@ -92,7 +96,7 @@ void FeatureControl::toIdleActive(){
     int half_point = idleActivityNumUpdates/2;
 
     for (int step =0; step < idleActivityNumUpdates; step++){
-        idleActivityTimings.push_back(step*idleActivityDuration/idleActivityNumUpdates);
+        idleActivityTimings.push_back(step*idleActivityTransitionDuration/idleActivityNumUpdates);
         switch (activityType){
         case ActivityTypes::ASCENDING:
             idleActivityValues.push_back(step*1./idleActivityNumUpdates);
@@ -152,16 +156,22 @@ void FeatureControl::getNewVideos(){
 
 void FeatureControl::playVideo(){
     //Todo: Let main loop know
+    videoLength = dbl->getVideoLength(playingVideo.second);
+
     if (speedSetting == 0){
-        videoCycleTimer = dbl->getVideoLength(playingVideo.second);
+        videoCycleTimer = videoLength-1.;
     }
+
+    (*fge)[0]->reset();
+    (*fge)[0]->setValue(videoCycleTimer);
+
     videoStartTime = ofGetElapsedTimef();
     coms->publishVideoNow( playingVideo.first, true);
     updateFeatureValues(dbl->getFeaturesFromindex(playingVideo.second));
 }
 
 void FeatureControl::cycleVideo(){
-    videoCycleIndex = videoCycleIndex++%videoMaxIndex;
+    videoCycleIndex = (videoCycleIndex+1)%videoMaxIndex;
     playingVideo = videos[videoCycleIndex];
     if (shouldSlowdown()){
         incrementSpeed(-1);
@@ -259,6 +269,10 @@ void FeatureControl::draw(){
     oss << "Idle Index" <<endl;
     oss << "Video name"<<endl;
     oss << "Video index" <<endl;
+    oss << "Video time" <<endl;
+    oss << "Video length" <<endl;
+    oss << "Cycle index"<<endl;
+    oss << "Cycle time" <<endl;
     ofDrawBitmapString(oss.str(), 100,0);
 
     oss.str("");
@@ -269,7 +283,10 @@ void FeatureControl::draw(){
     oss << idleFeatureIndex <<endl;
     oss << playingVideo.first <<endl;
     oss << playingVideo.second <<endl;
-
+    oss << currentTime -videoStartTime <<endl;
+    oss << videoLength <<endl;
+    oss << videoCycleIndex <<endl;
+    oss << videoCycleTimer <<endl;
 
     ofDrawBitmapString(oss.str(), 200,0);
 
@@ -376,6 +393,4 @@ void FeatureControl::setSpeed(int value){
     //todo :
     //Update speed gui element
     //featureGuiElements[0]->setValue(float(speed));
-
-    playVideo();
 }

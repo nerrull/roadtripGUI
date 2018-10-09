@@ -11,13 +11,20 @@ template <typename T> int sgn(T val) {
 void ofApp::setup(){
     ofGetWindowPtr()->setVerticalSync(true);
     ofSetVerticalSync(true);
-    ofEnableAntiAliasing();
-    ofEnableSmoothing();
     ofSetDrawBitmapMode(OF_BITMAPMODE_MODEL);
+    ofEnableSmoothing();
     ofEnableAlphaBlending();
-    ofEnableDepthTest();
-    ofSetCircleResolution(100);
-    glPointSize(2.0);
+//    ofEnableAntiAliasing();
+//    ofEnableDepthTest();
+
+    ofSetCircleResolution(200);
+
+//    glEnable(GL_POINT_SMOOTH);
+//    glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+//    glEnable(GL_LINE_SMOOTH);
+//    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+//    glEnable(GL_BLEND);
+//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     Settings::get().load("settings.json");
     string db_path = Settings::getString("db_path");
@@ -35,7 +42,6 @@ void ofApp::setup(){
     log_timer =ofGetElapsedTimeMillis();
     databaseLoader.loadHDF5Data(db_path);
 
-    fc =new FeatureControl(&databaseLoader, &coms);
     
     if (Settings::getInt("point_mode") ==0){
         pointCloudRender.setRotation(false);
@@ -91,6 +97,22 @@ void ofApp::setup(){
 
     ofBackground(0);
     setLayout();
+
+    ofFboSettings s;
+    s.width=ofGetWidth();
+    s.height=ofGetHeight();
+//    s.useDepth = true;
+
+    s.numSamples =0;
+    drawFBO.allocate(s);
+
+    s.numSamples =0;
+    drawFBO2.allocate(s);
+
+    FXAAshader.load("fxaa.vert","fxaa.frag");
+
+    fc =new FeatureControl(&databaseLoader, &coms, &featureGuiElements);
+
 }
 
 void ofApp::initNames(){
@@ -172,11 +194,13 @@ void ofApp::setLayout(){
 
     //Set widget layouts
     float div = 14./23.;
-    float rem =1.-div;
+    int leftWidth = int(floor(div*windowWidth));
+    int rightWidth = windowWidth -int(floor(div*windowWidth));
 
-    imageManager.setLayout(div*windowWidth, 0, rem*windowWidth, 3*windowHeight/4);
-    pointCloudRender.setLayout(0, windowHeight/4, div*windowWidth, 2* windowHeight/4);
-    waveform.setLayout(0,0, div*windowWidth, windowHeight/4 );
+
+    imageManager.setLayout(leftWidth, 0, rightWidth, 3*windowHeight/4);
+    pointCloudRender.setLayout(0, windowHeight/4, leftWidth, 2* windowHeight/4);
+    waveform.setLayout(0,0, leftWidth, windowHeight/4 );
 
     //Place knobs
     int controlSectionHeight = windowHeight/4;
@@ -288,16 +312,27 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-
     ofBackground(0);
     ofSetColor(255);
 
-//    drawColors();
+    drawFBO.begin();
+    ofBackground(0);
+    ofSetColor(255);
+    drawControls();
     waveform.draw();
+    drawFBO.end();
+
+    drawFBO2.begin();
+    ofBackground(0);
+    ofSetColor(255);
+
+//    FXAAshader.begin();
+    drawFBO.draw(0,0,ofGetWidth(), ofGetHeight());
+//    FXAAshader.end();
+
     pointCloudRender.draw();
     imageManager.draw();
-
-    drawControls();
+    drawControlsText();
 
     if (DEV_MODE){
         std::stringstream strm;
@@ -305,6 +340,9 @@ void ofApp::draw(){
         ofDrawBitmapString(strm.str(),20, 20);
         drawDebug();
     }
+
+    drawFBO2.end();
+    drawFBO2.draw(0,0,ofGetWidth(), ofGetHeight());
 }
 
 void ofApp::drawDebug(){
@@ -330,7 +368,13 @@ void ofApp::drawControls(){
         featureGuiElements[i]->draw();
     }
 }
+void ofApp::drawControlsText(){
 
+     //Draw feature controls
+     for (int i=0; i< featureGuiElements.size(); i++){
+         featureGuiElements[i]->drawText();
+     }
+ }
 void ofApp::drawColors(){
 
     ofColor c = databaseLoader.colors[databaseLoader.getVideoIndexFromName(currentPlayingVideo)];
@@ -373,13 +417,10 @@ void ofApp::playRandomVideo(){
     fc->playRandomVideo();
 }
 
-
-
 void ofApp::incrementSearchRadius(int step){
     int nv= this->fc->incrementSearchRadius(step);
     this->featureGuiElements[1]->setValue(nv);
 }
-
 
 void ofApp::updateOSC() {
     // hide old messages

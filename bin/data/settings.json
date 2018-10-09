@@ -1,17 +1,21 @@
 {
-    "db_path": "/media/rice1902/OuterSpace2/dataStore/database.h5",
-    "frames_path":"/media/rice1902/OuterSpace2/dataStore/IMAGE/frames_480",
-    "segnet_path":"/media/rice1902/OuterSpace2/dataStore/IMAGE/segnet",
+    "db_path": "/home/nuc/Documents/dataStore/database.h5",
+    "frames_path":"/home/nuc/Documents/dataStore/IMAGE/frames_480",
+    "segnet_path":"/home/nuc/Documents/dataStore/IMAGE/segnet",
     "monitor_index": 0,
-    "audio_device_id": 6,
+    "monitor_width": 1920,
+    "monitor_height": 1080,
+
+    "audio_device_id": 7,
     "windowed":false,
     "dev_mode":true,
     "english":false,
-    "idle_timeout": 6, //Seconds before idle behaviour kicks in
-    "idle_activity_interval": 10, //Period at which idle activity occurs
-    "idle_activity_duration": 5, //Duration of idle activity
-    "idle_activity_num_updates": 40, //Duration of idle activity
+    "idle_timeout": 10, //Seconds before idle behaviour kicks in
+    "idle_activity_interval": 30, //Period at which idle activity occurs
+    "idle_activity_transition_duration": 10, //Duration of idle activity
+    "idle_activity_endpoint_duration": 10, //Duration of idle activity
+    "idle_activity_num_updates": 20, //Duration of idle activity
     "log_spectral_axis":true,
-    "feature_decay_sec":1.,
+    "feature_decay_sec": 1.,
     "point_mode":0 //0 for 2D, 1 for 3D
 }

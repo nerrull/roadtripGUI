@@ -1,7 +1,7 @@
 #include "circlefeatureguielement.h"
 
 CircleFeatureGuiElement::CircleFeatureGuiElement(){
-    setRange(270);
+    setRange(250);
     setSize(100,100);
     setPosition(0,0);
 
@@ -13,14 +13,14 @@ CircleFeatureGuiElement::CircleFeatureGuiElement(){
     this->circleOffset = 0;
     this->weightCircleColor = ofColor(255);
     this->dualColor = false;
+    this->fillWidth =6;
+    this->fillOffset=4;
+
+//    exteriorLine.setGlobalColor(ofColor(255));
+//    exteriorPath.setMode(ofPath::POLYLINES);
+//    interiorPath.setMode(ofPath::POLYLINES);
 
 
-//    exteriorPath.setFilled(false);
-//    interiorPath.setFilled(false);
-//    exteriorPath.setStrokeWidth(1);
-//    interiorPath.setStrokeWidth(1);
-//    exteriorPath.setStrokeColor(255);
-//    interiorPath.setStrokeColor(255);
 }
 
 
@@ -37,7 +37,7 @@ CircleFeatureGuiElement::CircleFeatureGuiElement(int w, int h, int x, int y)
 
 void CircleFeatureGuiElement::setRange(int range){
     range = CLAMP(range, 0, 360);
-    this->rotationRange =range-5;
+    this->rotationRange =range;
     int diff = 360 - range;
     this->rotationMin = diff/2;
     this->rotationMax = 360-diff/2;
@@ -52,14 +52,19 @@ void CircleFeatureGuiElement::setPosition(int x, int y){
 void CircleFeatureGuiElement::setSize(int w, int h){
     this->width = w;
     this->height = h;
-    this->circleOuterRadius = min(width, height)/2-5;
-    this->circleInteriorRadius = circleOuterRadius*0.6;
+    this->circleOuterRadius = min(width, height)/2;
+    this->circleInnerRadius = circleOuterRadius-(2*fillWidth +6);
+    this->fillRadius =circleInnerRadius + (circleOuterRadius-circleInnerRadius)*0.5;
+
+
     exteriorPath.clear();
     interiorPath.clear();
     exteriorPath.arc(ofVec3f(0,0,0), this->circleOuterRadius, this->circleOuterRadius, this->rotationMin, this->rotationMax, 100);
-    interiorPath.arc(ofVec3f(0,0,0), this->circleInteriorRadius, this->circleInteriorRadius, this->rotationMin, this->rotationMax, 100);
+    interiorPath.arc(ofVec3f(0,0,0), this->circleInnerRadius, this->circleInnerRadius, this->rotationMin, this->rotationMax, 100);
+
     exteriorPath.rotateDeg(90, ofVec3f(0,0,1));
     interiorPath.rotateDeg(90, ofVec3f(0,0,1));
+
 }
 
 void CircleFeatureGuiElement::setTextOnTop(bool top){
@@ -78,7 +83,10 @@ void CircleFeatureGuiElement::setName(string n){
     }
 }
 
-void CircleFeatureGuiElement::drawName(){
+void CircleFeatureGuiElement::drawText(){
+    ofPushMatrix();
+    ofPushStyle();
+    ofTranslate(xOffset, yOffset);
     float fontHeight = font.stringHeight(name);
     float fontWidth = font.stringWidth(name);
 
@@ -95,63 +103,63 @@ void CircleFeatureGuiElement::drawName(){
     font.drawString(this->name,0,0);
     ofPopMatrix();
 
+    ofPopMatrix();
+    ofPopStyle();
 }
 
-void CircleFeatureGuiElement::draw(){
-    ofPushMatrix();
-    ofPushStyle();
-    ofSetLineWidth(1);
+void CircleFeatureGuiElement::translateToCenter(){
     ofTranslate(xOffset, yOffset);
-    drawName();
-
     ofTranslate(0, circleOffset);
     ofTranslate(width/2, height/2);
+}
+
+void CircleFeatureGuiElement::drawShell(){
+    ofPushMatrix();
+    ofPushStyle();
+
+
+    translateToCenter();
+
     //Draw outer circle
     ofSetColor(255);
+    ofSetLineWidth(2);
+
     exteriorPath.draw();
+//    exteriorPath2.draw();
+//    exteriorLine.draw();
 
     //Draw control triangle
     if (active){
         ofPushMatrix();
         ofFill();
-        ofSetColor(255);
-        int target_rot = this->targetValue*rotationRange;
-        ofRotateDeg(rotationMin +target_rot);
-        ofTranslate(0, circleOuterRadius+3);
+        int target_rot = this->targetValue*(rotationRange-2*fillOffset);
+        ofRotateDeg(rotationMin +target_rot+fillOffset);
+        ofTranslate(0, circleOuterRadius+4);
         ofVec2f t1(0,0);
-        ofVec2f t2(5,8);
-        ofVec2f t3(-5,8);
+        ofVec2f t2(5,10);
+        ofVec2f t3(-5,10);
         ofDrawTriangle(t1, t2,t3);
         ofPopMatrix();
     }
 
-
-    //Fill up to current value
-    int current_rot = this->currentValue*(rotationRange -6);
     ofPushMatrix();
     ofRotateDeg(this->rotationMin);
-    ofDrawLine(0,circleInteriorRadius, 0, 0,circleOuterRadius, 0);
-    ofRotateDeg(3);
-
-    for(int i =0; i< current_rot; i++ ){
-        ofRotateDeg(1);
-        ofDrawLine(0,circleInteriorRadius+3,0,circleOuterRadius-3);
-    }
+    ofDrawLine(0,circleInnerRadius, 0, 0,circleOuterRadius, 0);
     ofPopMatrix();
 
     //Draw max boundary line
     ofPushMatrix();
     ofRotateDeg(this->rotationMax);
-    ofDrawLine(0,circleInteriorRadius, 0,0,circleOuterRadius,0);
+    ofDrawLine(0,circleInnerRadius, 0,0,circleOuterRadius,0);
     ofPopMatrix();
 
     //Draw interior circle
-    ofSetColor(255);
     interiorPath.draw();
+//    interiorPath2.draw();
 
     //Draw weight circle
     ofFill();
-    float radius = (circleInteriorRadius-10)*currentWeight;
+    float radius = (circleInnerRadius-10)*currentWeight;
     if (dualColor){
         ofPath left;
         left.setColor(weightCircleColor);
@@ -168,10 +176,45 @@ void CircleFeatureGuiElement::draw(){
         ofDrawCircle(0,0,0,radius);
     }
 
+    ofPopStyle();
+    ofPopMatrix();
+}
 
+void CircleFeatureGuiElement::drawFill(){
+    //Fill up to current value
+
+    ofPushMatrix();
+    ofPushStyle();
+    ofSetColor(255);
+    translateToCenter();
+
+    fillLine.draw();
 
     ofPopStyle();
     ofPopMatrix();
+}
+
+
+void CircleFeatureGuiElement::updateFillLine(){
+    ofPushStyle();
+    int current_rot = CLAMP(this->currentValue*(rotationRange - fillOffset*2),1, rotationRange - fillOffset*2);
+    fillArc.clear();
+    fillArc.arc(ofVec3f(0,0,0), fillRadius, fillRadius, rotationMin+3, rotationMin+3 +current_rot, current_rot+1);
+    fillArc.rotateDeg(90, ofVec3f(0,0,1));
+
+    ofSetLineWidth(fillWidth);
+    fillLine.clear();
+    fillLine.setFromPolyline(fillArc);
+    ofPopStyle();
+}
+void CircleFeatureGuiElement::setValue(float v){
+    this->currentValue = v;
+    updateFillLine();
+}
+
+void CircleFeatureGuiElement::draw(){
+    drawShell();
+    drawFill();
 }
 
 void CircleFeatureGuiElement::setWeightColor(ofColor c){

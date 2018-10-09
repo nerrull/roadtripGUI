@@ -6,4 +6,5 @@ obj/
 .*~
 *.*~
 *.autosave
-*.qbs.use*
+*.qbs.user
+*.qbs.user*

@@ -21,6 +21,7 @@ public:
     //Draw/update functions
     void drawColors();
     void drawControls();
+    void drawControlsText();
     void drawDebug();
 
     //Coms
@@ -105,6 +106,12 @@ public:
     int speedSetting;
     string currentPlayingVideo;
     vector<string> lastVideos;
+
+    ofFbo drawFBO;
+    ofFbo drawFBO2;
+
+
+    ofShader FXAAshader;
 
 
 

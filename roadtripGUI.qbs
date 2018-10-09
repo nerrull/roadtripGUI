@@ -12,6 +12,8 @@ Project{
         name: { return FileInfo.baseName(path) }
 
         files: [
+            "bin/data/fxaa.frag",
+            "bin/data/fxaa.vert",
             "src/gui/curveline.h",
             "src/gui/elements/durationElement.h",
             "src/gui/elements/tiltelement.h",
@@ -58,7 +60,8 @@ Project{
             'ofxKDTree',
             'ofxJsonSettings',
             'ofxJSON',
-            'ofxWorldMap'
+            'ofxWorldMap',
+            'ofxFatLines'
 
         ]
 

@@ -5,7 +5,7 @@
 #include "util/featureKNN.h"
 #include "util/databaseloader.h"
 #include "util/communication.h"
-
+#include "gui/elements/uielements.h"
 
 /*    IdleFeatures{
         AMPLITUDE = 0,
@@ -27,7 +27,7 @@
 class FeatureControl
 {
 public:
-    FeatureControl(DatabaseLoader *, CommunicationManager*);
+    FeatureControl(DatabaseLoader *, CommunicationManager*, vector<unique_ptr<CircleFeatureGuiElement>>*);
 
     string stateStrings [3]= {"IDLE", "IDLE_ACTIVE", "HUMAN_ACTIVE"};
     enum BehaviourState{
@@ -157,7 +157,9 @@ private:
     float featureTimeout;
     float featureDecayRate;
     float idleActivityInterval;
-    float idleActivityDuration;
+    float idleActivityTransitionDuration;
+    float idleActivityEndpointDuration;
+
     float idleTimeout;
 
     int idleActivityNumUpdates;
@@ -195,9 +197,13 @@ private:
     vector<pair<string, int>> videos;
     pair<string, int> playingVideo;
 
+    vector<unique_ptr<CircleFeatureGuiElement>>* fge;
+
+
     int videoCycleIndex;
     int videoMaxIndex;
     int speedSetting;
+    float videoLength;
 
     int SPEEDS [15]= {-1, 4000, 3000, 2000, 1500, 1000, 500,400, 333, 250, 200, 125, 100, 63, 33};
     string SPEEDSTRINGS [15]= {"MAX", "4", "3", "2", "1.5", "1", "1/2","1/3","1/4","1/5", "1/8","1/10", "1/12", "1/16", "1/32"};

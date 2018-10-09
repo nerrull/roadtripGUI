@@ -27,7 +27,7 @@ AudioWaveform::AudioWaveform()
 
     float binstep = maxBin/float(n);
     bool expIndex = Settings::getFloat("log_spectral_axis");
-
+    runningMax =1.;
     for(int i = 0; i < n; i++) {
         js.push_back((n - i - 1) * spectrogramWidth +  spectrogramWidth-1);
         int expi = powFreq(float(i)/n +0.5)*i;
@@ -116,8 +116,8 @@ void AudioWaveform::drawWaveform(int w, int h){
     for (unsigned int i = 0; i < w; i++){
         ofVertex(i, h/2 -drawBuffer[step*i]*h/2);
     }
-    ofSetLineWidth(1);
-    ofDrawRectangle(0, 0, w, h);
+    ofSetLineWidth(2);
+    ofDrawRectangle(0, 1, w, h-1);
     ofEndShape();
     ofPopStyle();
 }
@@ -126,11 +126,10 @@ void AudioWaveform::drawSpectrum(int w, int h){
     //std::lock_guard<std::mutex> lock(spectroMutex);
     ofPushStyle();
     ofSetColor(255);
-    spectrogram.draw(0, 0, -1, w, h);
-    ofSetColor(255);
+    spectrogram.draw(3, 3,  w-4, h-4);
     ofNoFill();
-    ofSetLineWidth(1);
-    ofDrawRectangle(0, 0, 0, w, h);
+    ofSetLineWidth(2);
+    ofDrawRectangle(1, 1,  w-1, h-1);
     ofPopStyle();
 }
 
@@ -158,11 +157,12 @@ void AudioWaveform::update(){
             maxValue = abs(audioBins[i]);
         }
     }
-    if (maxValue == 0){
-        maxValue = max(maxValue, 0.1f);
-    }
+//    if max
+
+//    maxValue = max(maxValue, 0.05f);
+    runningMax = runningMax*0.99 + maxValue*0.01;
     for(int i = 0; i < fft->getBinSize(); i++) {
-        audioBins[i] /= maxValue;
+        audioBins[i] /= runningMax;
     }
 
     int n = (int) spectrogram.getHeight();

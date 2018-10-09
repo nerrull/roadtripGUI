@@ -48,6 +48,7 @@ private:
    vector<float> drawBins, middleBins, audioBins;
 
    ofImage spectrogram;
+   float runningMax;
 
    int spectrogramOffset;
    vector<int> js;

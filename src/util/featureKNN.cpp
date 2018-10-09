@@ -1,5 +1,6 @@
 #include "featureKNN.h"
 #include <nanoflann.hpp>
+#include <algorithm>
 
 using namespace nanoflann;
 vector<NodeConnection> ConnectionGraph::getPointPairsStartingFromIndex(int start_index, int max_connections, int maxdepth=-1){
@@ -247,7 +248,7 @@ void FeatureKNN::getKNN(vector<float> search_point, vector<float> search_weights
     kdTree.getWeightedKNN(double_point, numSearchPoints, search_indexes, search_dists, double_weights);
 }
 
-vector<int> FeatureKNN::getSearchResultsDistance(){
+vector<int> FeatureKNN::getSearchResultsDistance(bool shuffle){
     active_indexes.clear();
     int n_v =0;
     for (std::size_t i = 0; i < search_indexes.size(); i++)
@@ -258,6 +259,9 @@ vector<int> FeatureKNN::getSearchResultsDistance(){
         if (v > threshold_distance){
             break;
         }
+    }
+    if (shuffle){
+        std::shuffle(std::begin(active_indexes), std::end(active_indexes), rng);
     }
 
     if (active_indexes.size() <minVideos){

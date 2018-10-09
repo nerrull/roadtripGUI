@@ -1,9 +1,9 @@
 #include "colorcircle.h"
 
-ColorCircle::ColorCircle()
+ColorCircle::ColorCircle():CircleFeatureGuiElement()
 {
-    setRange(270);
     setColorLimits(0.,360.);
+
 }
 
 void ColorCircle::setValue(float v){
@@ -11,76 +11,56 @@ void ColorCircle::setValue(float v){
     currentValue = v;
 }
 
+void ColorCircle::setSize(int w, int h){
+    CircleFeatureGuiElement::setSize(w,h);
+    updateFillLine();
+}
+
+void ColorCircle::updateFillLine(){
+    ofPushStyle();
+    ofSetLineWidth(fillWidth);
+    vector<double> widths;
+    vector<ofFloatColor> colors;
+    ofFloatColor c(1.);
+
+    fillArc.clear();
+    fillArc.arc(ofVec3f(0,0,0), fillRadius, fillRadius, rotationMin+fillOffset, rotationMax-fillOffset-1, rotationRange);
+    fillArc.rotateDeg(90, ofVec3f(0,0,1));
+
+    for(int i = 0; i< fillArc.getVertices().size(); i++){
+        float h = ofMap(i, 0,fillArc.getVertices().size(),minColor,maxColor );
+        c = ofFloatColor::fromHsb(h/255.,0.8,0.8);
+        colors.push_back(c);
+    }
+
+    fillLine.clear();
+    fillLine.setFromPolyline(fillArc, colors);
+    ofPopStyle();
+
+}
+
 void ColorCircle::setColorLimits(float min, float max){
     minColor = min;
     maxColor = max*255./360.;
 }
-void ColorCircle::draw(){
+
+
+void ColorCircle::drawFill(){
     //Move to draw position and draw name
     ofPushMatrix();
-    ofTranslate(xOffset, yOffset);
-    drawName();
-    ofTranslate(0, circleOffset);
-    ofTranslate(width/2, height/2);
-
-    //Draw outer circle
-    ofNoFill();
-    ofSetColor(255);
-    exteriorPath.draw();
-
-    //Draw control triangle
-    if (active){
-        ofPushMatrix();
-        ofFill();
-        ofSetColor(255);
-        int target_rot = this->targetValue*rotationRange;
-        ofRotateDeg(rotationMin + target_rot);
-        ofTranslate(0, circleOuterRadius+3);
-        ofVec3f t1(0,0);
-        ofVec3f t2(5,8);
-        ofVec3f t3(-5,8);
-        ofDrawTriangle(t1, t2,t3);
-        ofPopMatrix();
-      }
-
-    //Fill up to current value
-    int current_rot = this->currentValue*rotationRange-6;
-
-    ofPushMatrix();
+    ofPushStyle();
+    translateToCenter();
+    fillLine.draw();
     ofRotateDeg(this->rotationMin);
-    ofDrawLine(0,circleInteriorRadius, 0, 0,circleOuterRadius, 0);
-    ofRotateDeg(3);
 
-    for(int i =0; i<rotationRange; i++ ){
-        ofColor c = ofColor::fromHsb(minColor + float(i) /rotationRange*(maxColor- minColor),200,200);
-        ofSetColor(c);
-        ofRotateDeg(1);
-        ofDrawLine(0,circleInteriorRadius +3,0,circleOuterRadius-3);
-    }
-    ofPopMatrix();
-
-    //Draw current value line
-    ofPushMatrix();
-    ofRotateDeg(this->rotationMin);
-    ofRotateDeg(3);
-    ofRotateDeg(this->targetValue*rotationRange);
-    ofSetColor(255.);
-    ofDrawLine(0,circleInteriorRadius+2,1,0,circleOuterRadius-2,1);
-    ofPopMatrix();
-
-    //Draw max boundary line
-    ofPushMatrix();
-    ofRotateDeg(this->rotationMax);
-    ofDrawLine(0,circleInteriorRadius, 0,0,circleOuterRadius,0);
-    ofPopMatrix();
-
-    //Draw interior circle
-    ofNoFill();
+    ofRotateDeg(fillOffset);
+    int current_rot = this->currentValue*(rotationRange -fillOffset*2);
+    ofSetLineWidth(2);
     ofSetColor(255);
-    interiorPath.draw();
+    ofRotateDeg(fillOffset);
+    ofRotateDeg(current_rot);
+    ofDrawLine(0,circleInnerRadius,0,circleOuterRadius);
 
-    //Draw weight circle
-    ofFill();
-    ofDrawCircle(0,0,0, (circleInteriorRadius-10 )*currentWeight);
+    ofPopStyle();
     ofPopMatrix();
 }
