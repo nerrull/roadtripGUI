@@ -15,31 +15,18 @@ public:
     void draw();
     void update();
     void updatePoints();
-    void initPoints(int nPoints, vector<ofColor> c);
     void initPoints(vector<ofVec3f> points, vector<ofColor>c);
     void setRotation(bool);
 
 
     void setLayout(int x, int y, int w, int h);
     void updatePointPositions(vector<vector< float >> featureDistances, vector<float> weights);
-    void updatePointPositionsOld(vector<vector< float >> featureDistances , vector<float> index_weights);
     void meshFromConnections(vector<NodeConnection>);
     void drawLines();
-    void drawCurvyBoy();
     void setActiveNodes(vector<int>);
     void setPlayingNode(int playingIndex);
 
 
-    ofPolyline line;
-    ofPolyline twineLine;
-    CurveLine c_line;
-
-    ofMesh playedLine;
-    ofEasyCam cam;
-    ofRectangle viewMain;
-
-    ofVboMesh mesh;
-    ofMesh nextMesh;
 
     bool rotationOn;
     int drawCount =0;
@@ -52,19 +39,29 @@ public:
     std::vector<ofVec3f> visualization_points;
     std::vector<ofVec3f> point_steps;
     vector<ofColor> colors;
+    vector<int> activePointIndexes;
 
     //Connections
     ofMesh connectionMesh;
 
-    ofMesh playingPointMesh;
-    ofMesh activePointMesh;
-
 
     //Active points
-    vector<int> draw_indexes;
     deque<ofVec3f> playedPoints;
 
-    ofPolyline trail;
+
+    //Drawing
+    CurveLine c_line;
+    ofEasyCam cam;
+    ofRectangle viewMain;
+
+    ofVboMesh mesh;
+    ofVboMesh playingPointMesh;
+    ofVboMesh activePointMesh;
+    vector<float> point_sizes;
+
+    ofShader billboardShader;
+    ofImage texture;
+    int minPointSize;
 
 //    NodeParticleManager nodeParticles;
 };

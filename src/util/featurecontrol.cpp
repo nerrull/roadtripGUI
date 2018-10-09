@@ -244,8 +244,11 @@ void FeatureControl::updateFeatureWeights(bool ignoreIdle){
         //After [idleTimeout] seconds of inactivity decrement the weight by 0.1 every 0.5 seconds
         if (inactiveCounter[i]>idleTimeout*secondsToFrames && featureWeights[i] >0){
             featureWeights[i] = CLAMP(featureWeights[i] - featureDecayRate, 0., 1.);
+
+            //Send message to lights if features change
             coms->sendLightControl(i+3, int(featureWeights[i]*4096));
         }
+
         else if (inactiveCounter[i]>idleTimeout*secondsToFrames && featureWeights[i] ==0.){
             featureActive[i]=false;
         }

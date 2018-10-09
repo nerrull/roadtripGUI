@@ -14,16 +14,14 @@ void ofApp::setup(){
     ofSetDrawBitmapMode(OF_BITMAPMODE_MODEL);
     ofEnableSmoothing();
     ofEnableAlphaBlending();
+
+
 //    ofEnableAntiAliasing();
 //    ofEnableDepthTest();
 
     ofSetCircleResolution(200);
 
-//    glEnable(GL_POINT_SMOOTH);
-//    glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-//    glEnable(GL_LINE_SMOOTH);
-//    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-//    glEnable(GL_BLEND);
+
 //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     Settings::get().load("settings.json");
@@ -109,7 +107,7 @@ void ofApp::setup(){
     s.numSamples =0;
     drawFBO2.allocate(s);
 
-    FXAAshader.load("fxaa.vert","fxaa.frag");
+//    FXAAshader.load("fxaa.vert","fxaa.frag");
 
     fc =new FeatureControl(&databaseLoader, &coms, &featureGuiElements);
 
@@ -290,8 +288,6 @@ void ofApp::update(){
 //    featureGuiElements[0]->setValue(float(speed));
 
 
-    //Send message to lights if features change
-
     //Update gui elements
     waveform.update();
     featureGuiElements[0]->update(); //Update speed timer
@@ -318,7 +314,9 @@ void ofApp::draw(){
     drawFBO.begin();
     ofBackground(0);
     ofSetColor(255);
+    pointCloudRender.draw();
     drawControls();
+
     waveform.draw();
     drawFBO.end();
 
@@ -330,7 +328,12 @@ void ofApp::draw(){
     drawFBO.draw(0,0,ofGetWidth(), ofGetHeight());
 //    FXAAshader.end();
 
-    pointCloudRender.draw();
+//        glEnable(GL_POINT_SMOOTH);
+//        glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+//        glEnable(GL_BLEND);
+//        glEnable(GL_POINT_SPRITE);
+//        glEnable(GL_LINE_SMOOTH);
+//        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     imageManager.draw();
     drawControlsText();
 

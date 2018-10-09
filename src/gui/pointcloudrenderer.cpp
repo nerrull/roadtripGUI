@@ -3,11 +3,21 @@
 PointCloudRenderer::PointCloudRenderer()
 {
     point_step = MAX_STEPS+1;
-    playedLine.setMode(OF_PRIMITIVE_LINE_STRIP);
     connectionMesh.setMode(OF_PRIMITIVE_LINES);
     playingPointMesh.setMode(OF_PRIMITIVE_POINTS);
     activePointMesh.setMode(OF_PRIMITIVE_POINTS);
 
+    mesh.setUsage(GL_DYNAMIC_DRAW);
+    mesh.setMode(OF_PRIMITIVE_POINTS);
+
+    if(ofIsGLProgrammableRenderer()){
+        billboardShader.load("shadersGL3/Billboard");
+    }else{
+        billboardShader.load("shadersGL2/Billboard");
+    }
+    ofDisableArbTex();
+    texture.load("halo.png");
+    minPointSize =12;
 }
 
 
@@ -24,28 +34,11 @@ void PointCloudRenderer::setLayout(int x, int y, int w, int h){
 
 
 void PointCloudRenderer::setActiveNodes(vector<int> nodeIndexes){
-    draw_indexes = nodeIndexes;
-    vector<ofVec3f> activePoints;
-    vector<ofFloatColor> c;
-    c.push_back(ofFloatColor(colors[playingIndex]));
-    activePointMesh.clear();
-    for (int i : nodeIndexes){
-        if (i ==playingIndex) continue;
-        activePoints.push_back(visualization_points[i]);
-        c.push_back(colors[i]);
-        activePointMesh.addVertex(visualization_points[i]);
-        activePointMesh.addColor(colors[i]);
-    }
-
-//    nodeParticles.updateNodesActivePoints(activePoints,c, visualization_points[playingIndex]);
+    activePointIndexes = nodeIndexes;
 }
-
 
 void PointCloudRenderer::setPlayingNode(int index){
     playingIndex = index;
-    playingPointMesh.clear();
-    playingPointMesh.addVertex(visualization_points[playingIndex]);
-    playingPointMesh.addColor(colors[playingIndex]);
 }
 
 void PointCloudRenderer::setRotation(bool on){
@@ -54,23 +47,29 @@ void PointCloudRenderer::setRotation(bool on){
 void PointCloudRenderer::initPoints(vector<ofVec3f> points, vector<ofColor>c){
     mesh.clear();
     point_steps.clear();
+    point_sizes.clear();
     visualization_points.clear();
     mesh.setMode(OF_PRIMITIVE_POINTS);
     colors = c;
 
     int index=  0;
+    mesh.getVertices().resize(points.size());
+    mesh.getColors().resize(points.size());
+    mesh.getNormals().resize(points.size());
+
     for (auto p :points)
     {
         ofVec3f point = p*100;
 
         //Stretch out horizontal dimension if we're in 2D
         if (!rotationOn) point.y *=2.;
+        mesh.getVertices()[index]= point;
+        mesh.getColors()[index]= colors[index];
 
-        mesh.addVertex(point);
-        mesh.addColor(colors[index]);
         point_steps.push_back(ofVec3f(0.,0.,0.));
-
         visualization_points.push_back(point);
+        point_sizes.push_back(1.);
+        mesh.setNormal(index,ofVec3f(12 + point_sizes[index]));
         index++;
     }
 
@@ -78,45 +77,21 @@ void PointCloudRenderer::initPoints(vector<ofVec3f> points, vector<ofColor>c){
 }
 
 
-void PointCloudRenderer::initPoints(int nPoints, vector<ofColor>c){
-    mesh.clear();
-    point_steps.clear();
-    visualization_points.clear();
-    mesh.setMode(OF_PRIMITIVE_POINTS);
-
-    float h,s,v;
-    float radius,angleY,angleZ;
-    float x,y,z;
-    colors = c;
-    for (std::size_t i = 0; i < nPoints; ++i)
-    {
-        radius = ofRandom( 0,100);
-        angleY = ofRandomf() *PI;
-        angleZ= ofRandomf()*PI;
-
-        x = radius*sin(angleY)*cos(angleZ);
-        y = radius*sin(angleY)*sin(angleZ);
-        z = 0.;//        x = ofRandom(0.,1.);
-//        y= ofRandom(0.,1.);
-//        z = 0.;
-
-
-        ofVec3f point(x,y,z);
-        mesh.addVertex(point);
-        mesh.addColor(colors[i]);
-        point_steps.push_back(ofVec3f(0.,0.,0.));
-        visualization_points.push_back(point);
-    }
-
-    point_step = MAX_STEPS +1;
-}
-
 
 void PointCloudRenderer::update(){
 //    updatePoints();
-
 //    nodeParticles.update();
     c_line.update(visualization_points[playingIndex]);
+    float t = ofGetElapsedTimef() *5;
+    for (int i = 0; i<point_sizes.size();i++){
+        mesh.setNormal(i,ofVec3f(minPointSize));
+    }
+    for (int i:activePointIndexes){
+        mesh.setNormal(playingIndex,ofVec3f(minPointSize +20*sin(t)));
+    }
+    mesh.setNormal(playingIndex,ofVec3f(minPointSize+20 + 20*sin(t)));
+
+
 }
 
 void PointCloudRenderer::updatePoints(){
@@ -131,12 +106,14 @@ void PointCloudRenderer::updatePoints(){
 
         mesh.addVertex(visualization_points[i]);
         mesh.addColor(colors[i]);
+
+        mesh.setNormal(i,ofVec3f(12 + point_sizes[i]));
     }
+
     if (point_step<=MAX_STEPS){
         point_step++;
     }
 }
-
 
 void PointCloudRenderer::draw()
 {
@@ -154,24 +131,18 @@ void PointCloudRenderer::draw()
     ofNoFill();
     drawCount++;
     //Draw line
+
+    billboardShader.begin();
+    ofEnablePointSprites(); // not needed for GL3/4
+    texture.getTexture().bind();
+    mesh.draw();
+    texture.getTexture().unbind();
+    ofDisablePointSprites(); // not needed for GL3/4
+
+    billboardShader.end();
+
     c_line.draw();
 
-    // Draw all of the points.
-    ofSetColor(255,70);
-    glPointSize(3);
-    mesh.draw();
-
-    ofSetColor(255);
-    glPointSize(2);
-    mesh.draw();
-
-    glPointSize(8);
-    ofSetColor(255);
-    activePointMesh.draw();
-
-    glPointSize(10);
-    ofSetColor(255);
-    playingPointMesh.draw();
 
     ofPopMatrix();
     cam.end();
@@ -218,64 +189,6 @@ void PointCloudRenderer::drawLines(){
         }
     }
 }
-
-
-
-void PointCloudRenderer::drawCurvyBoy(){
-    twineLine.clear();
-    for (auto p: visualization_points)
-    {
-        twineLine.curveTo(p);
-    }
-    ofSetColor(200,255,200,100);
-    twineLine.draw();
-}
-
-void setActivePoints(vector<int> activeIndexes){
-
-}
-
-
-void PointCloudRenderer::updatePointPositionsOld(vector<vector< float >> featureDistances , vector<float> index_weights){
-    point_steps.clear();
-    vector<float> features;
-    float total_weight =0;
-    for (auto& n : index_weights) {total_weight += n;}
-
-    for (std::size_t i = 0; i < featureDistances.size(); ++i){
-        float radius = 1.;
-        int dim_idx =0;
-        float angleY= 0;
-        float angleZ =0;
-
-        features= featureDistances[i];
-        int numActiveFeatures = features.size();
-
-        for (int featureIndex=0; featureIndex < features.size(); featureIndex++ ){
-            //Ignore unweighted values
-            float dist =features[featureIndex];
-            radius += (1. -dist )*index_weights[featureIndex]*50/total_weight;
-            if (numActiveFeatures <2) {
-                //ofSeedRandom(featureIndex* i);
-                angleY += i;
-                //angleY += diff*TWO_PI;
-                continue;
-            }
-
-            if (dim_idx %2 ==0 ) angleY += TWO_PI*dist;
-            else angleZ += TWO_PI *dist;
-            dim_idx++;
-        }
-
-        float x = radius*sin(angleY)*cos(angleZ);
-        float y = radius*sin(angleY)*sin(angleZ);
-        float z = radius*cos(angleY);
-
-        point_steps.push_back((ofVec3f(x,y,z) - visualization_points[i])/MAX_STEPS);
-    }
-    point_step =0;
-}
-
 
 void PointCloudRenderer::updatePointPositions(vector<vector< float >> featureDistances , vector<float> index_weights){
     point_steps.clear();

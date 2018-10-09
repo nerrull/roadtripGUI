@@ -7,11 +7,14 @@ int main( ){
 
     Settings::get().load("settings.json");
     ofGLFWWindowSettings settings;
-//    settings.setGLVersion(,0);
+//    settings.setGLVersion(4,3);
     settings.setSize(Settings::getInt("monitor_width"), Settings::getInt("monitor_height"));
     settings.monitor =Settings::getInt("monitor_index");
     settings.windowMode = Settings::getBool("windowed") ? OF_WINDOW :OF_FULLSCREEN;
     auto window = ofCreateWindow(settings);
+
+//    ofSetupOpenGL(1024,768, OF_WINDOW);			// <-------- setup the GL context
+
 
     //Ultrawide aspect ratio 21:9
 //    ofSetupOpenGL(2560/2,1080/2, OF_WINDOW);

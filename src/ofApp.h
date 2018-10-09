@@ -109,9 +109,7 @@ public:
 
     ofFbo drawFBO;
     ofFbo drawFBO2;
-
-
-    ofShader FXAAshader;
+//    ofShader FXAAshader;
 
 
 
