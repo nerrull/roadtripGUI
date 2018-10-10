@@ -64,7 +64,6 @@ Project{
             'ofxKDTree',
             'ofxJsonSettings',
             'ofxJSON',
-            'ofxWorldMap',
             'ofxFatLines'
 
         ]

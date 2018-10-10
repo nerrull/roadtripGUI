@@ -3,3 +3,6 @@ ofxOsc
 ofxThreadedImageLoader
 ofxHDF5
 ofxFft
+ofxJsonSettings
+ofxJSON
+ofxFatLines
