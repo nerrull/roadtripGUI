@@ -16,10 +16,10 @@ AudioWaveform::AudioWaveform()
     }
 
     fft = ofxFft::create(INTERNAL_BUFFER_LENGTH, OF_FFT_WINDOW_HAMMING);
-
-    spectrogram.allocate(ofGetWidth()/3, ofGetHeight()/3, OF_IMAGE_GRAYSCALE);
-    spectrogram.setColor(ofColor::black);
     audioBins.resize(fft->getBinSize());
+
+    spectrogram.allocate(2*ofGetWidth()/3, ofGetHeight()/3, OF_IMAGE_GRAYSCALE);
+    spectrogram.setColor(ofColor::black);
 
     int n = (int) spectrogram.getHeight();
     int maxBin = fft->getBinFromFrequency(5000);
@@ -124,6 +124,7 @@ void AudioWaveform::drawWaveform(int w, int h){
 
 void AudioWaveform::drawSpectrum(int w, int h){
     //std::lock_guard<std::mutex> lock(spectroMutex);
+
     ofPushStyle();
     ofSetColor(255);
     spectrogram.draw(3, 3,  w-4, h-4);
@@ -135,12 +136,14 @@ void AudioWaveform::drawSpectrum(int w, int h){
 
 void AudioWaveform::draw(){
     //Copy the internal buffer
-    ofPushMatrix();
-    ofTranslate(xOffset, yOffset);
 
+    ofPushMatrix();
+
+    ofTranslate(xOffset, yOffset);
     drawSpectrum(2*width/3, height);
     ofTranslate(2*width/3, yOffset);
     drawWaveform(width/3, height);
+
     ofPopMatrix();
 }
 
@@ -161,6 +164,7 @@ void AudioWaveform::update(){
 
 //    maxValue = max(maxValue, 0.05f);
     runningMax = runningMax*0.99 + maxValue*0.01;
+    runningMax = CLAMP(runningMax , 0.001, 1.);
     for(int i = 0; i < fft->getBinSize(); i++) {
         audioBins[i] /= runningMax;
     }

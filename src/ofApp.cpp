@@ -522,7 +522,7 @@ void ofApp::handleKnobInput(ofxOscMessage m){
         int step =m.getArgAsInt(1);
         if (step ==0) step = -1;
 
-        fc->incrementSpeed(step);
+        fc->incrementSpeed(-step);
         return;
     }
 
@@ -592,7 +592,6 @@ void ofApp::keyReleased(int key){
 void ofApp::mouseMoved(int x, int y ){
 
 }
-
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
     if (clickIndex>0){

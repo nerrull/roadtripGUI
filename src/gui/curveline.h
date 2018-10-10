@@ -2,6 +2,7 @@
 #define CURVELINE_H
 #include "ofMain.h"
 #include "ofMath.h"
+#include "ofxFatLine.h"
 
 class CurveLine{
 public:
@@ -23,22 +24,24 @@ public:
             if (line.getVertices().size()>resolution){
                 drawOffset = resolution;
             }
+
+
         }
 //        for (int i = 0; i<2; i++){
 //            pointAges.push_front(ofGetFrameNum());
 //        }
     }
     void update(){
-
+        ofPushStyle();
         if(!line.getVertices().empty()){
-            if (drawOffset !=0){
-                drawLine.clear();
-                drawOffset = MAX(0,drawOffset - resolution/10 );
-                auto first = line.getVertices().begin();
-                auto last = line.getVertices().begin() +line.getVertices().size() - drawOffset;
-                vector<ofDefaultVertexType> newVec(first, last);
-                drawLine.addVertices(newVec);
-            }
+//            if (drawOffset !=0){
+//                drawLine.clear();
+//                drawOffset = MAX(0,drawOffset - resolution/10 );
+//                auto first = line.getVertices().begin();
+//                auto last = line.getVertices().begin() +line.getVertices().size() - drawOffset;
+//                vector<ofDefaultVertexType> newVec(first, last);
+//                drawLine.addVertices(newVec);
+//            }
 
             float step =line.size()/(resolution/2.);
             int numsteps = (int) floor(step);
@@ -53,15 +56,30 @@ public:
             for (int i =0;i<numsteps;i++){
                 line.getVertices().erase(line.getVertices().begin());
             }
-        }
 
+
+            ofPopStyle();
+            int numVerts = line.getVertices().size();
+            vector<ofFloatColor> colors;
+
+            for (int i =0; i<numVerts; i++){
+                float s =  float(i)/float(numVerts) *0.5;
+                colors.push_back(ofFloatColor(1.,1.,1.,s+0.1));
+            }
+            ofSetLineWidth(1);
+            fatLine.clear();
+            fatLine.setFromPolyline(line, colors);
+            ofPushStyle();
+
+        }
+        ofPopStyle();
     }
 
     void draw(){
         ofPushStyle();
         ofSetColor(255,255,255,200);
-        ofSetLineWidth(1);
-        line.draw();
+//        line.draw();
+        fatLine.draw();
 //        if (drawOffset >0){
 //            drawLine.draw();
 //        }
@@ -75,12 +93,14 @@ public:
 private:
     ofPolyline drawLine;
     ofPolyline line;
+    ofxFatLine fatLine;
 
     deque<ofVec3f> pointAges;
     ofVec3f targetPoint;
     float stepcounter;
     int drawOffset =0;
     int resolution = 100;
+
 
 //    void addPoint(ofVec3f p){
 //        pointAges.push_front(p);

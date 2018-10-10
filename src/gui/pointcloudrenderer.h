@@ -35,6 +35,7 @@ public:
     int MAX_STEPS =30;
     int playingIndex;
     int num_points;
+    float scaleFactor;
 
     //All points
     std::vector<ofVec3f> visualization_points;

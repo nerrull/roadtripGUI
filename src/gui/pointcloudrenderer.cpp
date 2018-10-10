@@ -19,6 +19,7 @@ PointCloudRenderer::PointCloudRenderer()
     texture.load("circle_blur_2.png");
     minPointSize =12;
     maxPointSize = 20;
+    scaleFactor  = 1000;
 }
 
 
@@ -30,7 +31,7 @@ void PointCloudRenderer::setLayout(int x, int y, int w, int h){
     viewMain.height =h-3;
     cam.setPosition(ofVec3f(0.,0.,100.));
     cam.lookAt(ofVec3f(0,0,0));
-    cam.setDistance(100);
+    cam.setDistance(1000);
 }
 
 void PointCloudRenderer::setActiveNodes(vector<int> nodeIndexes){
@@ -60,7 +61,7 @@ void PointCloudRenderer::initPoints(vector<ofVec3f> points, vector<ofColor>c){
 
     for (auto p :points)
     {
-        ofVec3f point = p*100;
+        ofVec3f point = p*scaleFactor;
 
         //Stretch out horizontal dimension if we're in 2D
         if (!rotationOn) point.y *=2.;
@@ -78,6 +79,9 @@ void PointCloudRenderer::initPoints(vector<ofVec3f> points, vector<ofColor>c){
 }
 
 void PointCloudRenderer::updateLine(int index){
+    if (index == playingIndex){
+        return;
+    }
     c_line.addPoint(visualization_points[index]);
 }
 
@@ -88,9 +92,9 @@ void PointCloudRenderer::update(){
     float t = ofGetElapsedTimef() *5;
     c_line.update();
 
-    for (int i:activePointIndexes){
-        point_sizes[i] = CLAMP(point_sizes[i]+2., 0, maxPointSize/2);
-    }
+//    for (int i:activePointIndexes){
+//        point_sizes[i] = CLAMP(point_sizes[i]+2., 0, maxPointSize/2);
+//    }
 
 
     for (int i = 0; i<point_sizes.size();i++){

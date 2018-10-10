@@ -215,7 +215,7 @@ void FeatureControl::toHumanActive(){
 void FeatureControl::setIdleFeature(int index){
     idleFeatureIndex = index;
     targetFeatureValues[idleFeatureIndex] = 0.;
-    updateActiveFeature(idleFeatureIndex, 0.);
+    updateActiveFeature(idleFeatureIndex, 1.);
 }
 
 void FeatureControl::getNewVideos(bool play){
@@ -394,11 +394,11 @@ void FeatureControl::incrementFeatureTarget(int index, float step){
 }
 
 void FeatureControl::toggleFeatureTarget(int index){
-    updateActiveFeature(index, 1);
     float v = targetFeatureValues[index];
     int target_value = 0.;
     if (v<.5) target_value = 1.;
     targetFeatureValues[index] =CLAMP(target_value, 0., 1.);
+    updateActiveFeature(index, 1);
 }
 
 void FeatureControl::updateActiveFeature(int index, int timeoutOffset, bool trigger){

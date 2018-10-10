@@ -18,6 +18,7 @@
 
     "log_spectral_axis":true,
     "feature_decay_sec": 1.5,
+    "feature_decay_duration": 1.5,
 
-    "point_mode":0 //0 for 2D, 1 for 3D
+    "point_mode":1 //0 for 2D, 1 for 3D
 }
