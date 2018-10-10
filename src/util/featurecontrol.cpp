@@ -6,24 +6,25 @@ constexpr typename std::underlying_type<E>::type to_ut(E e) noexcept {
     return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
-FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,vector<unique_ptr<CircleFeatureGuiElement>> *guiElements)
+FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,vector<unique_ptr<CircleFeatureGuiElement>> *guiElements, PointCloudRenderer* pcr)
 {
     this->dbl = dbl;
     this->coms = coms;
     this->fge = guiElements;
+    this->pcr = pcr;
     this->fKNN = new FeatureKNN(dbl);
-
     Settings::get().load("settings.json");
     idleTimeout =  Settings::getInt("idle_timeout"); //seconds
+    idleMinVideos=  Settings::getInt("idle_videos"); //seconds
+
     featureDecayRate = Settings::getFloat("feature_decay_sec")/60.;
-    idleActivityInterval = Settings::getFloat("idle_activity_interval"); //seconds
+    idleActivityInterval = Settings::getFloat("idle_activity_min_interval"); //seconds
     idleActivityTransitionDuration= Settings::getFloat("idle_activity_transition_duration"); //seconds
     idleActivityEndpointDuration= Settings::getFloat("idle_activity_endpoint_duration"); //seconds
 
     idleActivityNumUpdates= Settings::getInt("idle_activity_num_updates"); //seconds
 
     state = IDLE;
-    update_video_flag = false;
     int num_features =21;
 
     //Initialize weight to zero
@@ -39,13 +40,69 @@ FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,
     //Make loudness the only active feature
     featureWeights[0]= 1.;
     playingVideo = pair<string, int>("Empty", -1);
-    videoMaxIndex = 5;
+    videoMaxIndex = 1;
     activityType = ActivityTypes::NONE;
     activeFeatureIndex=0;
     setSpeed(0);
     toIdle();
 
 }
+
+
+void FeatureControl::update(){
+    if (input_activity_flag){
+        lastActivityTime = ofGetElapsedTimef();
+    }
+
+    currentTime = ofGetElapsedTimef();
+    idleTimeCounter = currentTime - lastActivityTime;
+
+    if (currentTime -videoStartTime > videoCycleTimer){
+        cycleVideo();
+    }
+
+    updateState();
+
+
+    switch (state){
+    case HUMAN_ACTIVE:
+        //Todo
+        updateFeatureWeights(false);
+        break;
+
+    case IDLE:
+        updateFeatureWeights(true);
+        if (weightsChanged()){
+            getNewVideos(false);
+        }
+        break;
+
+    case IDLE_ACTIVE:
+        updateFeatureWeights(true);
+        float idleTime = currentTime -idleActivatedTime;
+        if (idleActivityTimings.size() >0){
+            (*fge)[0]->setValue(idleActivityTransitionDuration/idleActivityNumUpdates);
+            if (idleTime > idleActivityTimings[0]){
+                idleActivityTimings.pop_front();
+                targetFeatureValues[idleFeatureIndex]= idleActivityValues.front();
+                idleActivityValues.pop_front();
+                lastActiveCycle = currentTime;
+                cycleVideo();
+            }
+        }
+        else{
+            float vidlen = dbl->getVideoLength(playingVideo.second);
+            (*fge)[0]->setValue(vidlen);
+            if ((currentTime - lastActiveCycle)>= vidlen -1.1){
+                toIdle();
+            }
+        }
+        break;
+    }
+    input_activity_flag = false;
+    lastFeatureWeights =featureWeights;
+}
+
 
 void FeatureControl::updateState(){
     switch (state){
@@ -60,7 +117,7 @@ void FeatureControl::updateState(){
             toHumanActive();
             break;
         }
-        if (idleTimeCounter > idleActivityInterval){
+        if (idleTimeCounter > idleActivityInterval && playedIdleVideos >= idleMinVideos){
             toIdleActive();
             break;
         }
@@ -68,18 +125,17 @@ void FeatureControl::updateState(){
     case IDLE_ACTIVE:
         if (input_activity_flag){
             activityType = ActivityTypes::NONE;
+            getNewVideos();
             toHumanActive();
             break;
-        }
-        else if ((currentTime - idleActivatedTime) > (idleActivityTransitionDuration +idleActivityEndpointDuration)){
-            activityType = ActivityTypes::NONE;
-            toIdle();
         }
         break;
     }
 }
 
 void FeatureControl::toIdle(){
+    idleMinVideos=  Settings::getInt("idle_videos"); //number of videos to play in idle mode
+    playedIdleVideos =0;
     lastActivityTime = ofGetElapsedTimef();
     slowdownTime = ofGetElapsedTimef();
     setIdleFeature(idleFeatureIndexes[rand()%numIdleFeatures]);
@@ -88,46 +144,68 @@ void FeatureControl::toIdle(){
 
 void FeatureControl::toIdleActive(){
     state = IDLE_ACTIVE;
-    activityType = ActivityTypes(rand()% (to_ut(ActivityTypes::last)-1) +1);
-    setIdleFeature(idleActiveFeatureIndexes[rand()%numIdleActiveFeatures]);
+    activityType = ActivityTypes(rand()% (to_ut(ActivityTypes::last)) +1);
+    idleFeatureIndex =idleActiveFeatureIndexes[rand()%numIdleActiveFeatures];
+    targetFeatureValues[idleFeatureIndex] = 0.;
+    updateActiveFeature(idleFeatureIndex, 0., false);
 
     idleActivityValues.clear();
     idleActivityTimings.clear();
     int half_point = idleActivityNumUpdates/2;
 
+
     for (int step =0; step < idleActivityNumUpdates; step++){
         idleActivityTimings.push_back(step*idleActivityTransitionDuration/idleActivityNumUpdates);
         switch (activityType){
         case ActivityTypes::ASCENDING:
-            idleActivityValues.push_back(step*1./idleActivityNumUpdates);
+            idleActivityValues.push_back(step*1./(idleActivityNumUpdates-1));
             break;
-        case ActivityTypes::DESCENDING:
-            idleActivityValues.push_back(1. -float(step) / idleActivityNumUpdates );
-            break;
+//        case ActivityTypes::DESCENDING:
+//            idleActivityValues.push_back(1. -float(step) / (idleActivityNumUpdates-1));
+//            break;
         case ActivityTypes::UP_DOWN:
             //0 to 1
             if (step <half_point){
-                idleActivityValues.push_back(step*1./half_point);
+                idleActivityValues.push_back(step*1./(half_point-1));
             }
             //1 to 0
             else{
-                idleActivityValues.push_back(2. -float(step)/half_point);
+                idleActivityValues.push_back(1 - (step-half_point) *1./(half_point-1));
             }
             break;
-        case ActivityTypes::DOWN_UP:
-            //1 to 0
-            if (step <half_point){
-                idleActivityValues.push_back(1. -float(step)/half_point);
-            }
-            //0 to 1
-            else{
-                idleActivityValues.push_back(step*1./half_point);
-            }
-            break;
+//        case ActivityTypes::DOWN_UP:
+//            //1 to 0
+//            if (step <half_point){
+//                idleActivityValues.push_back(1. -float(step)/(half_point-1));
+//            }
+//            //0 to 1
+//            else{
+//                idleActivityValues.push_back(step*1./(half_point));
+//            }
+//            break;
         }
     }
     lastActivityTime = ofGetElapsedTimef();
     idleActivatedTime = ofGetElapsedTimef();
+
+    //Create a set of videos along the feature value trajectory
+    videoIndexes.clear();
+    videoCycleIndex =-1;
+
+    vector<float> tempSearchvalues = targetFeatureValues;
+    vector<float> tempFeatureWeights;
+    tempFeatureWeights.resize(tempSearchvalues.size(), 0);
+    tempFeatureWeights[idleFeatureIndex ]=1.;
+
+    for (auto value: idleActivityValues){
+        tempSearchvalues[idleFeatureIndex] = value;
+        fKNN->getKNN(tempSearchvalues, tempFeatureWeights);
+        videoIndexes.push_back( fKNN->getSearchResultsDistance(true)[0]);
+    }
+
+    videos =  dbl->getVideoPairsFromIndexes(videoIndexes);
+    videoMaxIndex = videos.size();
+    (*fge)[1]->setValue(videoMaxIndex);
 }
 
 void FeatureControl::toHumanActive(){
@@ -141,17 +219,30 @@ void FeatureControl::setIdleFeature(int index){
     updateActiveFeature(idleFeatureIndex, 0.);
 }
 
-void FeatureControl::getNewVideos(){
+void FeatureControl::getNewVideos(bool play){
+
     fKNN->getKNN(targetFeatureValues, featureWeights);
-    videoIndexes = fKNN->getSearchResultsFixedNumber(videoMaxIndex);
+    if (state ==IDLE || state ==IDLE_ACTIVE){
+        videoIndexes = fKNN->getSearchResultsDistance(3,true);
+        videoMaxIndex = videoIndexes.size();
+        (*fge)[1]->setValue(videoMaxIndex);
+    }
+
+    else if (state ==HUMAN_ACTIVE){
+//        videoMaxIndex = min(videoMaxIndex, 32);
+        videoIndexes = fKNN->getSearchResultsDistance(1,true);
+        videoMaxIndex = videoIndexes.size();
+        (*fge)[1]->setValue(videoMaxIndex);
+        videoIndexes = fKNN->getSearchResultsDistance(32, true);
+    }
+
     videos = dbl->getVideoPairsFromIndexes(videoIndexes);
 
-    if (playingVideo.second != videos[0].second){
+    if (playingVideo.second != videos[0].second && play){
         videoCycleIndex =0;
         playingVideo =videos[0];
         playVideo();
     }
-    update_video_flag = false;
 }
 
 void FeatureControl::playVideo(){
@@ -168,13 +259,18 @@ void FeatureControl::playVideo(){
     videoStartTime = ofGetElapsedTimef();
     coms->publishVideoNow( playingVideo.first, true);
     updateFeatureValues(dbl->getFeaturesFromindex(playingVideo.second));
+    pcr->updateLine(playingVideo.second);
+    pcr->updateLine(videos[(videoCycleIndex+1)%videoMaxIndex].second);
+
 }
 
 void FeatureControl::cycleVideo(){
     videoCycleIndex = (videoCycleIndex+1)%videoMaxIndex;
     playingVideo = videos[videoCycleIndex];
+    playedIdleVideos ++;
     if (shouldSlowdown()){
         incrementSpeed(-1);
+        idleMinVideos+=1;
     }
     playVideo();
 }
@@ -182,51 +278,6 @@ void FeatureControl::cycleVideo(){
 void FeatureControl::playRandomVideo(){
     playingVideo= this->dbl->getRandomVideo();
     playVideo();
-}
-
-void FeatureControl::update(){
-    if (input_activity_flag){
-        lastActivityTime = ofGetElapsedTimef();
-    }
-    if (update_video_flag){
-        getNewVideos();
-    }
-
-    currentTime = ofGetElapsedTimef();
-    idleTimeCounter = currentTime - lastActivityTime;
-
-    if (currentTime -videoStartTime > videoCycleTimer){
-        cycleVideo();
-    }
-
-    updateState();
-    input_activity_flag = false;
-    lastFeatureWeights =featureWeights;
-
-    switch (state){
-    case HUMAN_ACTIVE:
-        //Todo
-        updateFeatureWeights(false);
-        break;
-
-    case IDLE:
-        updateFeatureWeights(true);
-        break;
-
-    case IDLE_ACTIVE:
-        float idleTime = currentTime -idleActivatedTime;
-        if (idleActivityTimings.size() >0){
-            if (idleTime > idleActivityTimings[0]){
-                idleActivityTimings.pop_front();
-                targetFeatureValues[idleFeatureIndex]= idleActivityValues.front();
-                idleActivityValues.pop_front();
-            }
-            update_video_flag = true;
-        }
-        updateFeatureWeights(true);
-
-        break;
-    }
 }
 
 void FeatureControl::updateFeatureWeights(bool ignoreIdle){
@@ -276,6 +327,9 @@ void FeatureControl::draw(){
     oss << "Video length" <<endl;
     oss << "Cycle index"<<endl;
     oss << "Cycle time" <<endl;
+    oss << "Idle played" <<endl;
+    oss << "Idle min vid" <<endl;
+
     ofDrawBitmapString(oss.str(), 100,0);
 
     oss.str("");
@@ -290,6 +344,9 @@ void FeatureControl::draw(){
     oss << videoLength <<endl;
     oss << videoCycleIndex <<endl;
     oss << videoCycleTimer <<endl;
+
+    oss << playedIdleVideos <<endl;
+    oss << idleMinVideos <<endl;
 
     ofDrawBitmapString(oss.str(), 200,0);
 
@@ -345,12 +402,10 @@ void FeatureControl::toggleFeatureTarget(int index){
     targetFeatureValues[index] =CLAMP(target_value, 0., 1.);
 }
 
-void FeatureControl::updateActiveFeature(int index, int timeoutOffset){
-
+void FeatureControl::updateActiveFeature(int index, int timeoutOffset, bool trigger){
     featureActive[index]=true;
     featureWeights[index]=1.0;
     inactiveCounter[index] = 0;
-    update_video_flag =true;
 
     //Set light to max
     coms->sendLightControl(index+3, 4096);
@@ -366,7 +421,11 @@ void FeatureControl::updateActiveFeature(int index, int timeoutOffset){
             }
         }
     }
+    if (trigger){
+        getNewVideos();
+    }
 }
+
 
 void FeatureControl::registerInputActivity(){
     input_activity_flag = true;
@@ -382,18 +441,26 @@ bool FeatureControl::shouldSlowdown(){
 }
 
 int FeatureControl::incrementSearchRadius(int step){
-    videoMaxIndex =  CLAMP(videoMaxIndex+step, 1, 32);
+    int t =  CLAMP(videoMaxIndex+step, 1, 32);
+    if (t > videos.size()){
+        return videoMaxIndex;
+    }
+    videoMaxIndex = t;
+    (*fge)[1]->setValue(videoMaxIndex);
     return videoMaxIndex;
 }
 
 void FeatureControl::incrementSpeed(int step){
-    setSpeed( CLAMP(speedSetting-step, 0, 15));
+    setSpeed( CLAMP(speedSetting+step, 0, 14));
 }
 
 void FeatureControl::setSpeed(int value){
     speedSetting = value;
     videoCycleTimer = SPEEDS[speedSetting];
-    //todo :
-    //Update speed gui element
-    //featureGuiElements[0]->setValue(float(speed));
+    videoLength = dbl->getVideoLength(playingVideo.second);
+    if (speedSetting == 0){
+        videoCycleTimer = videoLength-1.;
+    }
+
+    (*fge)[0]->setValue(videoCycleTimer);
 }

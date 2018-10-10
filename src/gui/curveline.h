@@ -15,8 +15,7 @@ public:
     ~CurveLine(){
     }
 
-    void update(ofVec3f tp){
-
+    void addPoint(ofVec3f tp){
         if (tp!= targetPoint){
             line.curveTo(tp,resolution);
 //            line.curveTo(tp +ofVec3f(0.001,0.001, 0.001),100);
@@ -28,10 +27,10 @@ public:
 //        for (int i = 0; i<2; i++){
 //            pointAges.push_front(ofGetFrameNum());
 //        }
-
+    }
+    void update(){
 
         if(!line.getVertices().empty()){
-
             if (drawOffset !=0){
                 drawLine.clear();
                 drawOffset = MAX(0,drawOffset - resolution/10 );
@@ -83,13 +82,13 @@ private:
     int drawOffset =0;
     int resolution = 100;
 
-    void addPoint(ofVec3f p){
-        pointAges.push_front(p);
-    }
+//    void addPoint(ofVec3f p){
+//        pointAges.push_front(p);
+//    }
 
-    void dropPoint(){
-        pointAges.pop_back();
-    }
+//    void dropPoint(){
+//        pointAges.pop_back();
+//    }
 
 
 

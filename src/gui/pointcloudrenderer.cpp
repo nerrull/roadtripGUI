@@ -16,8 +16,9 @@ PointCloudRenderer::PointCloudRenderer()
         billboardShader.load("shadersGL2/Billboard");
     }
     ofDisableArbTex();
-    texture.load("halo.png");
+    texture.load("circle_blur_2.png");
     minPointSize =12;
+    maxPointSize = 20;
 }
 
 
@@ -32,13 +33,13 @@ void PointCloudRenderer::setLayout(int x, int y, int w, int h){
     cam.setDistance(100);
 }
 
-
 void PointCloudRenderer::setActiveNodes(vector<int> nodeIndexes){
     activePointIndexes = nodeIndexes;
 }
 
 void PointCloudRenderer::setPlayingNode(int index){
     playingIndex = index;
+    point_sizes[playingIndex] =  maxPointSize;
 }
 
 void PointCloudRenderer::setRotation(bool on){
@@ -76,20 +77,29 @@ void PointCloudRenderer::initPoints(vector<ofVec3f> points, vector<ofColor>c){
     point_step = MAX_STEPS +1;
 }
 
+void PointCloudRenderer::updateLine(int index){
+    c_line.addPoint(visualization_points[index]);
+}
 
 
 void PointCloudRenderer::update(){
 //    updatePoints();
 //    nodeParticles.update();
-    c_line.update(visualization_points[playingIndex]);
     float t = ofGetElapsedTimef() *5;
-    for (int i = 0; i<point_sizes.size();i++){
-        mesh.setNormal(i,ofVec3f(minPointSize));
-    }
+    c_line.update();
+
     for (int i:activePointIndexes){
-        mesh.setNormal(playingIndex,ofVec3f(minPointSize +20*sin(t)));
+        point_sizes[i] = CLAMP(point_sizes[i]+2., 0, maxPointSize/2);
     }
-    mesh.setNormal(playingIndex,ofVec3f(minPointSize+20 + 20*sin(t)));
+
+
+    for (int i = 0; i<point_sizes.size();i++){
+        point_sizes[i] = CLAMP(point_sizes[i]-1., 0, maxPointSize);
+        mesh.setNormal(i,ofVec3f(minPointSize+point_sizes[i]));
+    }
+
+
+//    mesh.setNormal(playingIndex,ofVec3f(minPointSize+20 + 5*sin(t)));
 
 
 }

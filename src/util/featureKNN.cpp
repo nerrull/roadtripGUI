@@ -107,7 +107,7 @@ void ConnectionGraph::recursiveGetPairs(int current_index, vector<bool>& passed_
 FeatureKNN::FeatureKNN(DatabaseLoader *database)
 {
     db = database;
-    minVideos =1;
+    threshold_distance = 0.05;
     initPoints();
 //    createFeatureGroups();
 }
@@ -246,9 +246,12 @@ void FeatureKNN::getKNN(vector<float> search_point, vector<float> search_weights
     vector<double> double_point(search_point.begin(),search_point.end());
     vector<double> double_weights(search_weights.begin(),search_weights.end());
     kdTree.getWeightedKNN(double_point, numSearchPoints, search_indexes, search_dists, double_weights);
+    for (int i =0; i< search_dists.size();i++){
+        search_dists[i]= sqrt(search_dists[i]);
+    }
 }
 
-vector<int> FeatureKNN::getSearchResultsDistance(bool shuffle){
+vector<int> FeatureKNN::getSearchResultsDistance(int minVideos, bool shuffle){
     active_indexes.clear();
     int n_v =0;
     for (std::size_t i = 0; i < search_indexes.size(); i++)

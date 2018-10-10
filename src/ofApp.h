@@ -106,6 +106,9 @@ public:
     int speedSetting;
     string currentPlayingVideo;
     vector<string> lastVideos;
+    vector<ofRectangle> clickRectangles;
+    int clickIndex;
+    int clickY =0;
 
     ofFbo drawFBO;
     ofFbo drawFBO2;

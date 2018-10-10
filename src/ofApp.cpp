@@ -39,7 +39,6 @@ void ofApp::setup(){
     numKnobs =23;
     log_timer =ofGetElapsedTimeMillis();
     databaseLoader.loadHDF5Data(db_path);
-
     
     if (Settings::getInt("point_mode") ==0){
         pointCloudRender.setRotation(false);
@@ -61,10 +60,10 @@ void ofApp::setup(){
         featureGuiElements[i]= make_unique<CircleFeatureGuiElement>();
     }
 
-
     //Init custom gui elements
     //Tilt
     featureGuiElements[10]= make_unique<TiltElement>();
+
     //Hue
     featureGuiElements[11] = make_unique<ColorCircle>();
     dynamic_cast<ColorCircle*>(featureGuiElements[11].get())->setColorLimits(databaseLoader.color_min_max.first, databaseLoader.color_min_max.second);
@@ -109,7 +108,7 @@ void ofApp::setup(){
 
 //    FXAAshader.load("fxaa.vert","fxaa.frag");
 
-    fc =new FeatureControl(&databaseLoader, &coms, &featureGuiElements);
+    fc =new FeatureControl(&databaseLoader, &coms, &featureGuiElements, &pointCloudRender);
 
 }
 
@@ -226,7 +225,7 @@ void ofApp::setLayout(){
     //Initialize special knobs
     featureGuiElements[0]->setName(durationName);
     featureGuiElements[1]->setName(neighbourName);
-
+    clickRectangles.clear();
     int x, y;
     x = 0;
     for (int i=0; i<featureGuiElements.size(); i++){
@@ -243,6 +242,7 @@ void ofApp::setLayout(){
 
         featureGuiElements[i]->setPosition(x,y);
         featureGuiElements[i]->setSize(elementWidth, elementHeight);
+        clickRectangles.push_back(ofRectangle(x,y,elementWidth, elementHeight));
 
         if (i>=2){
             featureGuiElements[i]->setName(featureNames[i-2]);
@@ -270,6 +270,7 @@ void ofApp::update(){
         coms.logMessageCount();
         incomingControllerMessageCounter =0;
         incomingPlayerMessageCounter =0;
+        log_timer = currentTime;
     }
 
     //Update active features
@@ -282,11 +283,6 @@ void ofApp::update(){
     pair<string,int> playingVideo = fc->getPlayingVideo();
     imageManager.loadImages(playingVideo.first);
     pointCloudRender.setPlayingNode(playingVideo.second);
-
-
-    //Send messages to player if speed changed
-//    featureGuiElements[0]->setValue(float(speed));
-
 
     //Update gui elements
     waveform.update();
@@ -405,16 +401,7 @@ void ofApp::toggleLanguage(){
     setLayout();
 }
 
-//--------------------------------------------------------------
-void ofApp::keyPressed(int key){
-    if (key =='l'){
-        toggleLanguage();
-    }
 
-    if (key =='r'){
-        playRandomVideo();
-    }
-}
 
 void ofApp::playRandomVideo(){
     fc->playRandomVideo();
@@ -528,9 +515,9 @@ void ofApp::handlePythonMessages(){
 
 void ofApp::handleKnobInput(ofxOscMessage m){
     //    ofLogDebug(ofToString(ofGetElapsedTimef(),3)) << " Step Message received : " ;
-    int i = m.getArgAsInt(0);
     fc->registerInputActivity();
 
+    int i = m.getArgAsInt(0);
     if (i ==1){
         int step =m.getArgAsInt(1);
         if (step ==0) step = -1;
@@ -584,7 +571,19 @@ void ofApp::audioIn(ofSoundBuffer & buffer){
     waveform.receiveBuffer(buffer);
 }
 
+//--------------------------------------------------------------
+void ofApp::keyPressed(int key){
+    if (key =='l'){
+        toggleLanguage();
+    }
 
+    if (key =='r'){
+        playRandomVideo();
+    }
+    if (key =='a'){
+        fc->toIdleActive();
+    }
+}
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
 }
@@ -596,16 +595,39 @@ void ofApp::mouseMoved(int x, int y ){
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-
+    if (clickIndex>0){
+        if (y  > (clickY +5)){
+            ofxOscMessage m;
+            m.addInt32Arg(clickIndex);
+            m.addInt32Arg(-1);
+            clickY = y;
+            handleKnobInput(m);
+        }
+        else if (y  < (clickY -5)){
+            ofxOscMessage m;
+            m.addInt32Arg(clickIndex);
+            m.addInt32Arg(1);
+            clickY = y;
+            handleKnobInput(m);
+        }
+    }
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
+    for (int i = 0; i<clickRectangles.size(); i++){
+        if (clickRectangles[i].inside(x,y)){
+            clickIndex = i+1;
+            clickY =y;
+            ofLogError()<<i << "selected"<<endl;
+        }
+    }
 
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
+    clickIndex = -1;
 
 }
 

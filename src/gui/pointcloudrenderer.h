@@ -25,6 +25,7 @@ public:
     void drawLines();
     void setActiveNodes(vector<int>);
     void setPlayingNode(int playingIndex);
+    void updateLine(int);
 
 
 
@@ -62,6 +63,7 @@ public:
     ofShader billboardShader;
     ofImage texture;
     int minPointSize;
+    int maxPointSize;
 
 //    NodeParticleManager nodeParticles;
 };

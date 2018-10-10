@@ -6,6 +6,7 @@
 #include "util/databaseloader.h"
 #include "util/communication.h"
 #include "gui/elements/uielements.h"
+#include "gui/pointcloudrenderer.h"
 
 /*    IdleFeatures{
         AMPLITUDE = 0,
@@ -27,7 +28,7 @@
 class FeatureControl
 {
 public:
-    FeatureControl(DatabaseLoader *, CommunicationManager*, vector<unique_ptr<CircleFeatureGuiElement>>*);
+    FeatureControl(DatabaseLoader *, CommunicationManager*, vector<unique_ptr<CircleFeatureGuiElement>>*, PointCloudRenderer*);
 
     string stateStrings [3]= {"IDLE", "IDLE_ACTIVE", "HUMAN_ACTIVE"};
     enum BehaviourState{
@@ -36,15 +37,16 @@ public:
         HUMAN_ACTIVE,
     };
 
-    string activityTypeStrings [5]= {"NONE","ASCENDING", "DESCENDING", "UP_DOWN", "DOWN_UP"};
+    string activityTypeStrings [5]= {"NONE","ASCENDING", "UP_DOWN", "DESCENDING", "DOWN_UP"};
     enum class ActivityTypes{
         NONE,
         ASCENDING,
-        DESCENDING,
         UP_DOWN,
-        DOWN_UP,
+
         first = NONE,
-        last =DOWN_UP
+        last = UP_DOWN
+        //        DESCENDING,
+        //        DOWN_UP,
     };
 
     string activitymodifierStrings [4]= {"NONE", "ACCELERATE", "DECELERATE", "RANDOM_TIMINGS"};
@@ -69,14 +71,17 @@ public:
     ActivityTypes activityType;
     FeatureKNN* fKNN;
     DatabaseLoader* dbl;
+    PointCloudRenderer* pcr;
     CommunicationManager* coms;
+    vector<unique_ptr<CircleFeatureGuiElement>>* fge;
+
 
     void initialize(DatabaseLoader * dbl);
     void update();
 
     void incrementFeatureTarget(int index, float step);
     void toggleFeatureTarget(int index);
-    void updateActiveFeature(int index,int timeoutOffset);
+    void updateActiveFeature(int index,int timeoutOffset, bool trigger = true);
     bool shouldSlowdown();
     void registerInputActivity();
     void draw();
@@ -120,6 +125,16 @@ public:
         return false;
     }
 
+    bool weightsChanged(){
+        for (int i=0; i <featureWeights.size();i++){
+            if (lastFeatureWeights[i]!= featureWeights[i]){
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     float getValueDiff(int index){
         return featureValues[index] - lastFeatureValues[index];
     }
@@ -134,14 +149,21 @@ public:
      pair<string, int> getPlayingVideo(){
         return playingVideo;
     }
-    vector<int> getVideoIndexes(){return videoIndexes;}
+    vector<int> getVideoIndexes(){
+        vector<int> t;
+        for (int i=0;i<videoMaxIndex; i++){
+            t.push_back(videoIndexes[i]);
+        }
+        return t;
+    }
 
-private:
     //State functions
     void updateState();
     void toIdle();
     void toIdleActive();
     void toHumanActive();
+
+private:
 
     //Update feature functions
     void setIdleFeature(int index);
@@ -149,7 +171,7 @@ private:
     void updateFeatureValues(vector<float> fv);
 
     //Video search/playback functions
-    void getNewVideos();
+    void getNewVideos(bool play= true);
     void playVideo();
     void cycleVideo();
 
@@ -175,13 +197,16 @@ private:
 
     float slowdownTime;
     float currentTime;
+    float lastActiveCycle;
 
+    int idleMinVideos;
+    int playedIdleVideos;
     //Feature indexes
     int idleFeatureIndex;
     int activeFeatureIndex;
 
+
     bool input_activity_flag;
-    bool update_video_flag;
 
     vector<bool> featureActive;
     vector<int> inactiveCounter;
@@ -197,15 +222,12 @@ private:
     vector<pair<string, int>> videos;
     pair<string, int> playingVideo;
 
-    vector<unique_ptr<CircleFeatureGuiElement>>* fge;
-
-
     int videoCycleIndex;
     int videoMaxIndex;
     int speedSetting;
     float videoLength;
 
-    int SPEEDS [15]= {-1, 4000, 3000, 2000, 1500, 1000, 500,400, 333, 250, 200, 125, 100, 63, 33};
+    float SPEEDS [15]= {-1, 4., 3., 2., 1.5, 1., 0.5, .4, .333, .25, .2, .125, .1, .063, .033};
     string SPEEDSTRINGS [15]= {"MAX", "4", "3", "2", "1.5", "1", "1/2","1/3","1/4","1/5", "1/8","1/10", "1/12", "1/16", "1/32"};
 
 

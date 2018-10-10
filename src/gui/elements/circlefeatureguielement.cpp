@@ -15,7 +15,7 @@ CircleFeatureGuiElement::CircleFeatureGuiElement(){
     this->dualColor = false;
     this->fillWidth =6;
     this->fillOffset=4;
-
+    this->active = false;
 //    exteriorLine.setGlobalColor(ofColor(255));
 //    exteriorPath.setMode(ofPath::POLYLINES);
 //    interiorPath.setMode(ofPath::POLYLINES);
