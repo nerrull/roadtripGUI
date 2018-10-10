@@ -180,8 +180,6 @@ private:
     float featureDecayRate;
     float idleActivityInterval;
     float idleActivityTransitionDuration;
-    float idleActivityEndpointDuration;
-
     float idleTimeout;
 
     int idleActivityNumUpdates;

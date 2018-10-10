@@ -14,6 +14,10 @@ Project{
         files: [
             "bin/data/fxaa.frag",
             "bin/data/fxaa.vert",
+            "bin/data/shadersGL2/Billboard.frag",
+            "bin/data/shadersGL2/Billboard.vert",
+            "bin/data/shadersGL3/Billboard.frag",
+            "bin/data/shadersGL3/Billboard.vert",
             "src/gui/curveline.h",
             "src/gui/elements/durationElement.h",
             "src/gui/elements/tiltelement.h",

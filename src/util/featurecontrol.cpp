@@ -20,7 +20,6 @@ FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,
     featureDecayRate = Settings::getFloat("feature_decay_sec")/60.;
     idleActivityInterval = Settings::getFloat("idle_activity_min_interval"); //seconds
     idleActivityTransitionDuration= Settings::getFloat("idle_activity_transition_duration"); //seconds
-    idleActivityEndpointDuration= Settings::getFloat("idle_activity_endpoint_duration"); //seconds
 
     idleActivityNumUpdates= Settings::getInt("idle_activity_num_updates"); //seconds
 

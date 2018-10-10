@@ -14,7 +14,7 @@ out vec4 colorVarying;
 
 void main() {
 	vec4 eyeCoord = modelViewMatrix * position;
-	gl_Position = projectionMatrix * eyeCoord; // to be accurate this should premultiply by orientationMatrix
+        gl_Position = orientationMatrix*projectionMatrix * eyeCoord; // to be accurate this should premultiply by orientationMatrix
 	
 	float dist = sqrt(eyeCoord.x*eyeCoord.x + eyeCoord.y*eyeCoord.y + eyeCoord.z*eyeCoord.z);
 	float att	 = 600.0 / dist;
