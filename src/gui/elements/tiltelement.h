@@ -25,10 +25,10 @@ public:
             fillArc.arc(ofVec3f(0,0,0), fillRadius, fillRadius, rotationMin +rotationRange/2 -1, rotationMin +rotationRange/2 +1,  int(abs(diff)));
 
         }
-        fillArc.rotate(90, ofVec3f(0,0,1));
+        fillArc.rotateDeg(90, ofVec3f(0,0,1));
 
         fillLine.clear();
-        fillLine.setFromPolyline(fillArc);
+        fillLine.setFromPolyline(fillArc, ofFloatColor(fillColor/255.));
 
         ofPopStyle();
     }

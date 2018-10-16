@@ -15,12 +15,10 @@ CircleFeatureGuiElement::CircleFeatureGuiElement(){
     this->dualColor = false;
     this->fillWidth =6;
     this->fillOffset=4;
-    this->active = false;
+    this->setActive(false);
 //    exteriorLine.setGlobalColor(ofColor(255));
 //    exteriorPath.setMode(ofPath::POLYLINES);
 //    interiorPath.setMode(ofPath::POLYLINES);
-
-
 }
 
 
@@ -121,7 +119,7 @@ void CircleFeatureGuiElement::drawShell(){
     translateToCenter();
 
     //Draw outer circle
-    ofSetColor(255);
+    ofSetColor(fillColor);
     ofSetLineWidth(2);
 
     exteriorPath.draw();
@@ -172,7 +170,7 @@ void CircleFeatureGuiElement::drawShell(){
         right.draw();
     }
     else{
-        ofSetColor(weightCircleColor);
+        ofSetColor(fillColor);
         ofDrawCircle(0,0,0,radius);
     }
 
@@ -185,13 +183,24 @@ void CircleFeatureGuiElement::drawFill(){
 
     ofPushMatrix();
     ofPushStyle();
-    ofSetColor(255);
+    ofSetColor(fillColor);
     translateToCenter();
 
     fillLine.draw();
 
     ofPopStyle();
     ofPopMatrix();
+}
+
+void CircleFeatureGuiElement::setActive(bool v){
+    active = v;
+    if (active){
+        this->fillColor = 255;
+    }
+    else{
+        this->fillColor = 255*0.7;
+    }
+    updateFillLine();
 }
 
 
@@ -204,7 +213,8 @@ void CircleFeatureGuiElement::updateFillLine(){
 
     ofSetLineWidth(fillWidth);
     fillLine.clear();
-    fillLine.setFromPolyline(fillArc);
+    ofSetColor(fillColor);
+    fillLine.setFromPolyline(fillArc, ofFloatColor(fillColor/255.));
     ofPopStyle();
 }
 void CircleFeatureGuiElement::setValue(float v){

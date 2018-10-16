@@ -29,7 +29,7 @@ public:
     virtual void setValue(int v){currentValue = v;}
 
     virtual void setTarget(float v){targetValue = v;}
-    virtual void setActive(bool v){active = v;}
+    virtual void setActive(bool v);
 
     virtual void setMax(float v){return;}
 
@@ -50,6 +50,7 @@ protected:
     int circleOffset;
     int fillWidth;
     int fillOffset;
+    int fillColor;
     float circleOuterRadius;
     float circleInnerRadius;
     float fillRadius;

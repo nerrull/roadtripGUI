@@ -3,7 +3,6 @@
 ColorCircle::ColorCircle():CircleFeatureGuiElement()
 {
     setColorLimits(0.,360.);
-
 }
 
 void ColorCircle::setValue(float v){
@@ -14,6 +13,10 @@ void ColorCircle::setValue(float v){
 void ColorCircle::setSize(int w, int h){
     CircleFeatureGuiElement::setSize(w,h);
     updateFillLine();
+}
+
+void ColorCircle::setActive(bool v){
+    CircleFeatureGuiElement::setActive(v);
 }
 
 void ColorCircle::updateFillLine(){
@@ -29,7 +32,7 @@ void ColorCircle::updateFillLine(){
 
     for(int i = 0; i< fillArc.getVertices().size(); i++){
         float h = ofMap(i, 0,fillArc.getVertices().size(),minColor,maxColor );
-        c = ofFloatColor::fromHsb(h/255.,0.8,0.8);
+        c = ofFloatColor::fromHsb(h/255.,0.8,0.8,float(fillColor)/255.);
         colors.push_back(c);
     }
 
