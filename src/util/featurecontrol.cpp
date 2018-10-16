@@ -43,6 +43,7 @@ FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,
     videoMaxIndex = 1;
     activityType = ActivityTypes::NONE;
     activeFeatureIndex=0;
+    idle_active_video_count =0;
     setSpeed(0);
     toIdle();
 
@@ -67,8 +68,6 @@ void FeatureControl::update(){
 
     updateState();
 
-
-
     switch (state){
     case HUMAN_ACTIVE:
         //Todo
@@ -86,19 +85,25 @@ void FeatureControl::update(){
     case IDLE_ACTIVE:
         updateFeatureWeights(true);
         float idleTime = currentTime -idleActivatedTime;
-        if (idleActivityTimings.size() >0){
-            (*fge)[0]->setValue(idleActivityTransitionDuration/idleActivityNumUpdates);
-            if (idleTime > idleActivityTimings[0]){
-                idleActivityTimings.pop_front();
-                targetFeatureValues[idleFeatureIndex]= idleActivityValues.front();
-                idleActivityValues.pop_front();
-                lastActiveCycle = currentTime;
+        if (idle_active_state == IDLE_ACTIVE_TRANSITION){
+            lastActiveCycle = currentTime;
+//            (*fge)[0]->setValue(idleActivityTransitionDuration/idleActivityNumUpdates);
+
+
+            if ((currentTime - idleActivatedTime) > idleActivityTimings[videoCycleIndex]){
+                idle_active_video_count++;
                 cycleVideo();
             }
+
+            if (videoCycleIndex >= (idleActivityNumUpdates-1)){
+                idle_active_state = IDLE_ACTIVE_STABLE;
+                setSpeed(0);
+            }
+
         }
-        else{
+        else if ( idle_active_state == IDLE_ACTIVE_STABLE){
             float vidlen = dbl->getVideoLength(playingVideo.second);
-            (*fge)[0]->setValue(vidlen);
+            (*fge)[0]->setValue(vidlen-1.);
             if ((currentTime - lastActiveCycle)>= vidlen -1.1){
                 toIdle();
             }
@@ -131,7 +136,7 @@ void FeatureControl::updateState(){
     case IDLE_ACTIVE:
         if (input_activity_flag){
             activityType = ActivityTypes::NONE;
-            getNewVideos();
+//            getNewVideos();
             toHumanActive();
             break;
         }
@@ -150,6 +155,9 @@ void FeatureControl::toIdle(){
 
 void FeatureControl::toIdleActive(){
     state = IDLE_ACTIVE;
+    idle_active_state = IDLE_ACTIVE_TRANSITION;
+    idle_active_video_count = 0;
+    setSpeed(9);
     activityType = ActivityTypes(rand()% (to_ut(ActivityTypes::last)) +1);
     idleFeatureIndex =idleActiveFeatureIndexes[rand()%numIdleActiveFeatures];
     targetFeatureValues[idleFeatureIndex] = 0.;
@@ -158,7 +166,6 @@ void FeatureControl::toIdleActive(){
     idleActivityValues.clear();
     idleActivityTimings.clear();
     int half_point = idleActivityNumUpdates/2;
-
 
     for (int step =0; step < idleActivityNumUpdates; step++){
         idleActivityTimings.push_back(step*idleActivityTransitionDuration/idleActivityNumUpdates);
@@ -196,7 +203,7 @@ void FeatureControl::toIdleActive(){
 
     //Create a set of videos along the feature value trajectory
     videoIndexes.clear();
-    videoCycleIndex =-1;
+    videoCycleIndex =0;
 
     vector<float> tempSearchvalues = targetFeatureValues;
     vector<float> tempFeatureWeights;
@@ -206,7 +213,7 @@ void FeatureControl::toIdleActive(){
     for (auto value: idleActivityValues){
         tempSearchvalues[idleFeatureIndex] = value;
         fKNN->getKNN(tempSearchvalues, tempFeatureWeights);
-        videoIndexes.push_back( fKNN->getSearchResultsDistance(true)[0]);
+        videoIndexes.push_back( fKNN->getSearchResultsDistance(1,true, numVideosInRange)[0]);
     }
 
     videos =  dbl->getVideoPairsFromIndexes(videoIndexes);
@@ -229,17 +236,17 @@ void FeatureControl::getNewVideos(bool play){
 
     fKNN->getKNN(targetFeatureValues, featureWeights);
     if (state ==IDLE || state ==IDLE_ACTIVE){
-        videoIndexes = fKNN->getSearchResultsDistance(3,true);
+        videoIndexes = fKNN->getSearchResultsDistance(3,true, numVideosInRange);
         videoMaxIndex = videoIndexes.size();
         (*fge)[1]->setValue(videoMaxIndex);
     }
 
     else if (state ==HUMAN_ACTIVE){
 //        videoMaxIndex = min(videoMaxIndex, 32);
-        videoIndexes = fKNN->getSearchResultsDistance(1,true);
-        videoMaxIndex = videoIndexes.size();
+//        videoIndexes = fKNN->getSearchResultsDistance(1,true, numVideosInRange);
+//        videoMaxIndex = videoIndexes.size();
         (*fge)[1]->setValue(videoMaxIndex);
-        videoIndexes = fKNN->getSearchResultsDistance(32, true);
+        videoIndexes = fKNN->getSearchResultsDistance(32, true, numVideosInRange);
     }
 
     videos = dbl->getVideoPairsFromIndexes(videoIndexes);
@@ -274,6 +281,9 @@ void FeatureControl::cycleVideo(){
     videoCycleIndex = (videoCycleIndex+1)%videoMaxIndex;
     playingVideo = videos[videoCycleIndex];
     playedIdleVideos ++;
+    if (state ==IDLE_ACTIVE){
+        targetFeatureValues[idleFeatureIndex]= idleActivityValues[videoCycleIndex];
+    }
     if (shouldSlowdown()){
         incrementSpeed(-1);
         idleMinVideos+=1;
@@ -332,6 +342,8 @@ void FeatureControl::draw(){
     oss << "Cycle time" <<endl;
     oss << "Idle played" <<endl;
     oss << "Idle min vid" <<endl;
+    oss << "Videos found" <<endl;
+
 
     ofDrawBitmapString(oss.str(), 100,0);
 
@@ -350,6 +362,7 @@ void FeatureControl::draw(){
 
     oss << playedIdleVideos <<endl;
     oss << idleMinVideos <<endl;
+    oss<< numVideosInRange<<endl;
 
     ofDrawBitmapString(oss.str(), 200,0);
 
@@ -393,8 +406,8 @@ void FeatureControl::updateFeatureValues(vector<float> fv){
 }
 
 void FeatureControl::incrementFeatureTarget(int index, float step){
-    updateActiveFeature(index, 1);
     targetFeatureValues[index] =CLAMP(targetFeatureValues[index]+step, 0., 1.);
+    updateActiveFeature(index, 1);
 }
 
 void FeatureControl::toggleFeatureTarget(int index){

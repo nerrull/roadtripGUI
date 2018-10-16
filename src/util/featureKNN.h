@@ -63,7 +63,7 @@ public:
 
     void getKNN(vector<float> search_point, vector<float> search_weights);
     vector<int> getSearchResultsFixedNumber(int);
-    vector<int> getSearchResultsDistance(int minVideos =3, bool shuffle = false);
+    vector<int> getSearchResultsDistance(int minVideos, bool shuffle , int& numWithinRange);
 
 
     void setPlayingIndex(int);
@@ -73,7 +73,7 @@ public:
 
     int num_points;
     int playingIndex =0;
-    int numSearchPoints = 100;
+    int numSearchPoints = 32;
     float threshold_distance = 0.05;
 
 

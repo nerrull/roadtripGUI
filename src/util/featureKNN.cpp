@@ -249,9 +249,10 @@ void FeatureKNN::getKNN(vector<float> search_point, vector<float> search_weights
     for (int i =0; i< search_dists.size();i++){
         search_dists[i]= sqrt(search_dists[i]);
     }
+    int test =0;
 }
 
-vector<int> FeatureKNN::getSearchResultsDistance(int minVideos, bool shuffle){
+vector<int> FeatureKNN::getSearchResultsDistance(int minVideos, bool shuffle, int & numWithinRange){
     active_indexes.clear();
     int n_v =0;
     for (std::size_t i = 0; i < search_indexes.size(); i++)
@@ -263,6 +264,7 @@ vector<int> FeatureKNN::getSearchResultsDistance(int minVideos, bool shuffle){
             break;
         }
     }
+    numWithinRange = int (active_indexes.size());
     if (shuffle){
         std::shuffle(std::begin(active_indexes), std::end(active_indexes), rng);
     }

@@ -612,13 +612,25 @@ void ofApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-    for (int i = 0; i<clickRectangles.size(); i++){
-        if (clickRectangles[i].inside(x,y)){
-            clickIndex = i+1;
-            clickY =y;
-            ofLogError()<<i << "selected"<<endl;
+    if (button==0){
+        for (int i = 0; i<clickRectangles.size(); i++){
+            if (clickRectangles[i].inside(x,y)){
+                clickIndex = i+1;
+                clickY =y;
+                ofLogError()<<i << "selected"<<endl;
+                break;
+            }
         }
     }
+
+    if (button==2){
+        for (int i = 0; i<clickRectangles.size(); i++){
+            if (clickRectangles[i].inside(x,y)){
+                handleButtonInput(i+1);
+            }
+        }
+    }
+
 
 }
 

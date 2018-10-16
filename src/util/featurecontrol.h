@@ -24,6 +24,8 @@
         VEGETATION = 17
     }
 */
+const int IDLE_ACTIVE_TRANSITION = 0;
+const int IDLE_ACTIVE_STABLE =  1;
 
 class FeatureControl
 {
@@ -206,10 +208,11 @@ private:
     bool blink;
     int idleMinVideos;
     int playedIdleVideos;
+    int numVideosInRange = 0;
+
     //Feature indexes
     int idleFeatureIndex;
     int activeFeatureIndex;
-
 
     bool input_activity_flag;
 
@@ -234,6 +237,9 @@ private:
 
     float SPEEDS [15]= {-1, 4., 3., 2., 1.5, 1., 0.5, .4, .333, .25, .2, .125, .1, .063, .033};
     string SPEEDSTRINGS [15]= {"MAX", "4", "3", "2", "1.5", "1", "1/2","1/3","1/4","1/5", "1/8","1/10", "1/12", "1/16", "1/32"};
+
+    int idle_active_state;
+    int idle_active_video_count;
 
 
 
