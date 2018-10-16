@@ -15,7 +15,8 @@ CircleFeatureGuiElement::CircleFeatureGuiElement(){
     this->dualColor = false;
     this->fillWidth =6;
     this->fillOffset=4;
-    this->setActive(false);
+    this->setActive( false);
+    this->triangle = true;
 //    exteriorLine.setGlobalColor(ofColor(255));
 //    exteriorPath.setMode(ofPath::POLYLINES);
 //    interiorPath.setMode(ofPath::POLYLINES);
@@ -127,7 +128,7 @@ void CircleFeatureGuiElement::drawShell(){
 //    exteriorLine.draw();
 
     //Draw control triangle
-    if (active){
+    if (active && triangle){
         ofPushMatrix();
         ofFill();
         int target_rot = this->targetValue*(rotationRange-2*fillOffset);

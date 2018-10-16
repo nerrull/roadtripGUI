@@ -9,6 +9,9 @@ class DurationElement: public CircleFeatureGuiElement
 public:
     DurationElement():CircleFeatureGuiElement(){
         timeText = "MAX";
+        triangle = false;
+        setActive(true);
+
     }
 
     void drawText(){

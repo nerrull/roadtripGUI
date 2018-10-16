@@ -6,6 +6,8 @@ class SearchRadiusElement: public CircleFeatureGuiElement
 {
 public:
     SearchRadiusElement():CircleFeatureGuiElement(){
+         triangle = false;
+         setActive(true);
     }
 
     void drawText(){

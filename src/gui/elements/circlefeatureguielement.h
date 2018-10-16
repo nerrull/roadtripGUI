@@ -67,6 +67,7 @@ protected:
     ofColor weightCircleColor;
     ofColor secondWeightCircleColor;
     bool dualColor;
+    bool triangle;
 
     void translateToCenter();
     virtual void updateFillLine();
