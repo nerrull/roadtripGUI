@@ -90,7 +90,6 @@ void ofApp::setup(){
     for(int i =0; i < num_features;i++){
         coms.sendLightControl(i+3, 0);
     }
-    coms.sendLightControl(3,4095);
 
     ofBackground(0);
     setLayout();
@@ -457,7 +456,6 @@ void ofApp::updateOSC() {
             ofLogVerbose(ofToString(ofGetElapsedTimef(),3)) << " SWT Message received : Index"<< idx << "value"<<swt ;
             if (swt >0) handleButtonInput(idx);
         }
-
         else
         {
             ofLogVerbose()<<  m.getAddress();

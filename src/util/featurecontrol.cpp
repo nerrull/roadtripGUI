@@ -35,6 +35,7 @@ FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,
     featureActive.resize(num_features, false);
     lastFeatureWeights.resize(num_features, 0.);
     videoCycleIndex = 0;
+    blink =false;
 
     //Make loudness the only active feature
     featureWeights[0]= 1.;
@@ -56,11 +57,16 @@ void FeatureControl::update(){
     currentTime = ofGetElapsedTimef();
     idleTimeCounter = currentTime - lastActivityTime;
 
-    if (currentTime -videoStartTime > videoCycleTimer){
+    if ((currentTime -videoStartTime) > videoCycleTimer){
         cycleVideo();
     }
 
+    if ((currentTime - blinkTimer) > 0.02 && blink){
+        blinkOff();
+    }
+
     updateState();
+
 
 
     switch (state){
@@ -73,6 +79,7 @@ void FeatureControl::update(){
         updateFeatureWeights(true);
         if (weightsChanged()){
             getNewVideos(false);
+            updateLights();
         }
         break;
 
@@ -294,9 +301,6 @@ void FeatureControl::updateFeatureWeights(bool ignoreIdle){
         //After [idleTimeout] seconds of inactivity decrement the weight by 0.1 every 0.5 seconds
         if (inactiveCounter[i]>idleTimeout*secondsToFrames && featureWeights[i] >0){
             featureWeights[i] = CLAMP(featureWeights[i] - featureDecayRate, 0., 1.);
-
-            //Send message to lights if features change
-            coms->sendLightControl(i+3, int(featureWeights[i]*4096));
         }
 
         else if (inactiveCounter[i]>idleTimeout*secondsToFrames && featureWeights[i] ==0.){
@@ -462,4 +466,27 @@ void FeatureControl::setSpeed(int value){
     }
 
     (*fge)[0]->setValue(videoCycleTimer);
+}
+
+
+void FeatureControl::updateLights(){
+    for (int index = 0 ; index < featureValues.size(); index ++){
+        int lightValue = 0;
+        lightValue += 4096*0.25 * featureValues[index];
+        lightValue += 4096*0.75 * featureActive[index];
+        coms->sendLightControl(index +3, lightValue);
+    }
+}
+
+
+void FeatureControl::blinkOn(){
+    coms->sendLightControl(0, 4096);
+    blink = true;
+    blinkTimer= currentTime;
+
+}
+
+void FeatureControl::blinkOff(){
+    coms->sendLightControl(0, 0);
+    blink = false;
 }

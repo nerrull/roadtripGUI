@@ -170,6 +170,11 @@ private:
     void updateFeatureWeights(bool ignoreIdle);
     void updateFeatureValues(vector<float> fv);
 
+    //Light functions
+    void updateLights();
+    void blinkOn();
+    void blinkOff();
+
     //Video search/playback functions
     void getNewVideos(bool play= true);
     void playVideo();
@@ -197,6 +202,8 @@ private:
     float currentTime;
     float lastActiveCycle;
 
+    float blinkTimer;
+    bool blink;
     int idleMinVideos;
     int playedIdleVideos;
     //Feature indexes
