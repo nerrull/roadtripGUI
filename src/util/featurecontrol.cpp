@@ -44,11 +44,12 @@ FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,
     activityType = ActivityTypes::NONE;
     activeFeatureIndex=0;
     idle_active_video_count =0;
+    input_activity_flag = 0;
+    blinkTimer =0;
     setSpeed(0);
     toIdle();
 
 }
-
 
 void FeatureControl::update(){
     if (input_activity_flag){
@@ -89,7 +90,6 @@ void FeatureControl::update(){
             lastActiveCycle = currentTime;
 //            (*fge)[0]->setValue(idleActivityTransitionDuration/idleActivityNumUpdates);
 
-
             if ((currentTime - idleActivatedTime) > idleActivityTimings[videoCycleIndex]){
                 idle_active_video_count++;
                 cycleVideo();
@@ -103,7 +103,7 @@ void FeatureControl::update(){
         }
         else if ( idle_active_state == IDLE_ACTIVE_STABLE){
             float vidlen = dbl->getVideoLength(playingVideo.second);
-            (*fge)[0]->setValue(vidlen-1.);
+            (*fge)[0]->setValue(vidlen-1);
             if ((currentTime - lastActiveCycle)>= vidlen -1.1){
                 toIdle();
             }

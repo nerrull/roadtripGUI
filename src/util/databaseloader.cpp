@@ -21,10 +21,10 @@ void DatabaseLoader::loadHDF5Data(string database_path){
 
     num_videos = feature_values_ptr->getDimensionSize(0);
     num_features = feature_values_ptr->getDimensionSize(1);
-    float *values= new float[num_videos*num_features];
+    auto values= new float[num_videos*num_features];
     feature_values_ptr->read(values);
     for( int row =0; row<num_videos; row++){
-        float *value_row = new float[num_features];
+        auto value_row = new float[num_features];
 
         std::copy(values +row*num_features,values +(row+1)*num_features,value_row );
         vector<float> v(value_row, value_row +num_features );
@@ -35,7 +35,7 @@ void DatabaseLoader::loadHDF5Data(string database_path){
     colors_ptr= hdf5File.loadDataSet("colors");
     int num_colors = colors_ptr->getDimensionSize(0);
     int color_dim = colors_ptr->getDimensionSize(1);
-    uint8_t *color_values= new uint8_t[num_colors*color_dim];
+    auto color_values= new uint8_t[num_colors*color_dim];
     colors_ptr->read(color_values);
     for( int row =0; row<num_colors; row++){
         uint8_t h,s,v;
@@ -50,7 +50,7 @@ void DatabaseLoader::loadHDF5Data(string database_path){
     coordinates_ptr= hdf5File.loadDataSet("coordinates");
     int num_coords = coordinates_ptr->getDimensionSize(0);
     int coord_dim = coordinates_ptr->getDimensionSize(1);
-    float *coordinateValues= new float[num_coords*coord_dim];
+    auto coordinateValues= new float[num_coords*coord_dim];
     coordinates_ptr->read(coordinateValues);
     for( int row =0; row<num_coords; row++){
         ofVec2f coords;
@@ -61,7 +61,7 @@ void DatabaseLoader::loadHDF5Data(string database_path){
 
     ofxHDF5DataSetPtr data_ptr= hdf5File.loadDataSet("color_limits");
     int num_values = data_ptr->getDimensionSize(0);
-    float *color_extrema= new float[num_values];
+    auto color_extrema= new float[num_values];
     data_ptr->read(color_extrema);
     color_min_max.first = color_extrema[0];
     color_min_max.second = color_extrema[1];
@@ -70,7 +70,7 @@ void DatabaseLoader::loadHDF5Data(string database_path){
     ofxHDF5DataSetPtr dr_ptr= hdf5File.loadDataSet("dimension_reduction");
     int num_points = dr_ptr->getDimensionSize(0);
     int points_dim = dr_ptr->getDimensionSize(1);
-    float *dimValues= new float[num_points*points_dim];
+    auto dimValues= new float[num_points*points_dim];
     dr_ptr->read(dimValues);
     for( int row =0; row<num_points; row++){
         ofVec3f p;
@@ -99,9 +99,9 @@ void DatabaseLoader::loadHDF5Data(string database_path){
     size_t  name_size = feature_names_ptr->getDataSize();
     int num_names = feature_names_ptr->getDimensionSize(0);
 
-    uint8_t *characters = new uint8_t[num_names*STRING_LENGTH];
+    auto characters = new uint8_t[num_names*STRING_LENGTH];
     feature_names_ptr->read(characters);
-    char * name = new char[STRING_LENGTH];
+    auto name = new char[STRING_LENGTH];
 
     for( int row =0; row<num_names; row++){
         std::copy(characters +row*STRING_LENGTH,characters +(row+1)*STRING_LENGTH,name );
@@ -120,7 +120,7 @@ void DatabaseLoader::loadHDF5Data(string database_path){
 
     ofxHDF5DataSetPtr duration_ptr= hdf5File.loadDataSet("video_durations");
     num_videos = duration_ptr->getDimensionSize(0);
-    float *durationValues= new float[num_videos];
+    auto durationValues= new float[num_videos];
     duration_ptr->read(durationValues);
     for( int row =0; row<num_videos; row++){
         video_durations.push_back(durationValues[row]);
