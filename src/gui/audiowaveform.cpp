@@ -21,7 +21,7 @@ AudioWaveform::AudioWaveform()
     spectrogram.allocate(2*ofGetWidth()/3, ofGetHeight()/3, OF_IMAGE_GRAYSCALE);
     spectrogram.setColor(ofColor::black);
 
-    int n = (int) spectrogram.getHeight();
+    int n = (int) spectrogram.getWidth();
     int maxBin = fft->getBinFromFrequency(5000);
     int spectrogramWidth = (int) spectrogram.getWidth();
 
@@ -29,7 +29,11 @@ AudioWaveform::AudioWaveform()
     bool expIndex = Settings::getFloat("log_spectral_axis");
     runningMax =1.;
     for(int i = 0; i < n; i++) {
-        js.push_back((n - i - 1) * spectrogramWidth +  spectrogramWidth-1);
+//        js.push_back((n - i - 1) * spectrogramWidth +  spectrogramWidth-1);
+//        js.push_back((n-1)*spectrogramWidth+ i);
+        js.push_back(i);
+
+
         int expi = powFreq(float(i)/n +0.5)*i;
         if (expIndex){
             binIndexes.push_back(expi*binstep);
@@ -55,9 +59,11 @@ void AudioWaveform::receiveBuffer(ofSoundBuffer& buffer){
 void AudioWaveform::shiftSpectrogram(){
     int spectrogramWidth = (int) spectrogram.getWidth();
     int spectrogramHeight= (int) spectrogram.getHeight();
-    ofPixels crop;
-    spectrogram.getPixelsRef().cropTo(crop,1,0,spectrogramWidth-1,spectrogramHeight);
-    crop.pasteInto(spectrogram, 0,0);
+    auto pixels = spectrogram.getPixels();
+    auto pixelref = pixels.getPixels();
+
+    memmove(pixelref+spectrogramWidth, pixelref, spectrogramWidth*spectrogramHeight - spectrogramWidth);
+    spectrogram.setFromPixels(pixels);
     spectrogram.update();
 }
 
@@ -169,11 +175,11 @@ void AudioWaveform::update(){
         audioBins[i] /= runningMax;
     }
 
-    int n = (int) spectrogram.getHeight();
+    int n = (int) spectrogram.getWidth();
     shiftSpectrogram();
 
     for(int i = 0; i < n; i++) {
-        spectrogram.setColor(js[i], (unsigned char) (255. * audioBins[binIndexes[i]]));
+        spectrogram.setColor(js[i] + n*5, (unsigned char) (255. * audioBins[binIndexes[i]]));
     }
 }
 
