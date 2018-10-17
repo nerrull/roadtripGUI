@@ -16,7 +16,7 @@ public:
         image.allocate(height, width, OF_IMAGE_GRAYSCALE);
         image.setColor(ofColor::black);
         int n = (int) image.getHeight();
-        int maxBin = fft->getBinFromFrequency(4000);
+        int maxBin = fft->getBinFromFrequency(5000);
         int spectrogramWidth = (int) image.getWidth();
 
         float binstep = maxBin/float(n);
@@ -49,6 +49,7 @@ public:
 
     void update(vector<float> audioBins){
         shift();
+        int n = (int) image.getWidth();
 
         for(int i = 0; i < n; i++) {
             image.setColor(js[i] , (unsigned char) (255. * audioBins[binIndexes[i]]));
