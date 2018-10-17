@@ -27,9 +27,6 @@ public:
 
 
         }
-//        for (int i = 0; i<2; i++){
-//            pointAges.push_front(ofGetFrameNum());
-//        }
     }
     void update(){
         ofPushStyle();
@@ -100,17 +97,6 @@ private:
     float stepcounter;
     int drawOffset =0;
     int resolution = 100;
-
-
-//    void addPoint(ofVec3f p){
-//        pointAges.push_front(p);
-//    }
-
-//    void dropPoint(){
-//        pointAges.pop_back();
-//    }
-
-
 
 };
 
