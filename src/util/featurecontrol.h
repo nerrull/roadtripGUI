@@ -26,6 +26,7 @@
 */
 const int IDLE_ACTIVE_TRANSITION = 0;
 const int IDLE_ACTIVE_STABLE =  1;
+const int COLOR_FEATURE_INDEX = 9;
 
 class FeatureControl
 {
@@ -61,9 +62,7 @@ public:
         last = RANDOM_TIMINGS
     };
 
-
     int secondsToFrames = 60.;
-
     int numIdleFeatures= 4;
     int idleFeatureIndexes[4] = {0,4,5,6};
     int numIdleActiveFeatures= 7;

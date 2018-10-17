@@ -10,7 +10,6 @@ public:
     CircleFeatureGuiElement(int w, int h, int xOffset, int yOffset);
 
     void setName(string n);
-    void setTextOnTop(bool);
     void setCircleOffset(int);
     void setWeightColor(ofColor c);
     void setWeightColors(ofColor c1, ofColor c2);
@@ -55,12 +54,10 @@ protected:
     float circleInnerRadius;
     float fillRadius;
 
-
     float textOffset;
     float currentValue;
     float targetValue;
     float currentWeight;
-    bool textOnTop;
     bool active;
     string name;
     ofTrueTypeFont font;

@@ -406,6 +406,11 @@ void FeatureControl::updateFeatureValues(vector<float> fv){
 }
 
 void FeatureControl::incrementFeatureTarget(int index, float step){
+    if (index ==COLOR_FEATURE_INDEX) {
+        if(targetFeatureValues[index]+step >=1.){
+            targetFeatureValues[index] = 0.;
+        }
+    }
     targetFeatureValues[index] =CLAMP(targetFeatureValues[index]+step, 0., 1.);
     updateActiveFeature(index, 1);
 }

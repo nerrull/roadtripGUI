@@ -10,6 +10,7 @@ public:
     ColorCircle();
 
     void drawFill();
+    void drawShell();
     void setValue(float);
     void updateFillLine();
     void setSize(int w, int h);

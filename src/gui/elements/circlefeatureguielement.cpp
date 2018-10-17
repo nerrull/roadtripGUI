@@ -22,7 +22,6 @@ CircleFeatureGuiElement::CircleFeatureGuiElement(){
 //    interiorPath.setMode(ofPath::POLYLINES);
 }
 
-
 CircleFeatureGuiElement::CircleFeatureGuiElement(int w, int h, int x, int y)
 {
     setPosition(x,y);
@@ -55,7 +54,6 @@ void CircleFeatureGuiElement::setSize(int w, int h){
     this->circleInnerRadius = circleOuterRadius-(2*fillWidth +6);
     this->fillRadius =circleInnerRadius + (circleOuterRadius-circleInnerRadius)*0.5;
 
-
     exteriorPath.clear();
     interiorPath.clear();
     exteriorPath.arc(ofVec3f(0,0,0), this->circleOuterRadius, this->circleOuterRadius, this->rotationMin, this->rotationMax, 100);
@@ -66,9 +64,6 @@ void CircleFeatureGuiElement::setSize(int w, int h){
 
 }
 
-void CircleFeatureGuiElement::setTextOnTop(bool top){
-    this->textOnTop = top;
-}
 void CircleFeatureGuiElement::setCircleOffset(int o){
     circleOffset = o;
 }
@@ -93,11 +88,8 @@ void CircleFeatureGuiElement::drawText(){
 
     ofSetColor(255);
     ofPushMatrix();
-    int y= 0;
-    if (!this->textOnTop)
-    {
-        y= height+25;
-    }
+
+    int y= height+25;
     ofTranslate(offset,y );
     font.drawString(this->name,0,0);
     ofPopMatrix();
@@ -115,7 +107,6 @@ void CircleFeatureGuiElement::translateToCenter(){
 void CircleFeatureGuiElement::drawShell(){
     ofPushMatrix();
     ofPushStyle();
-
 
     translateToCenter();
 
@@ -171,7 +162,7 @@ void CircleFeatureGuiElement::drawShell(){
         right.draw();
     }
     else{
-        ofSetColor(fillColor);
+        ofSetColor(weightCircleColor);
         ofDrawCircle(0,0,0,radius);
     }
 

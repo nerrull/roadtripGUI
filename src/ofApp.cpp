@@ -66,7 +66,7 @@ void ofApp::setup(){
 
     //Hue
     featureGuiElements[11] = make_unique<ColorCircle>();
-    dynamic_cast<ColorCircle*>(featureGuiElements[11].get())->setColorLimits(databaseLoader.color_min_max.first, databaseLoader.color_min_max.second);
+//    dynamic_cast<ColorCircle*>(featureGuiElements[11].get())->setColorLimits(databaseLoader.color_min_max.first, databaseLoader.color_min_max.second);
 
     //Set the colours on the segnet elements
     int segnetStart =14;
@@ -230,12 +230,10 @@ void ofApp::setLayout(){
     for (int i=0; i<featureGuiElements.size(); i++){
         y = windowHeight - controlSectionHeight;
         if (i%2 ==0){
-            featureGuiElements[i]->setTextOnTop(false);
             featureGuiElements[i]->setCircleOffset(firstRowOffset);
         }
         else{
             y +=secondRowOffset;
-            featureGuiElements[i]->setTextOnTop(false);
             featureGuiElements[i]->setCircleOffset(firstRowOffset);
         }
 
