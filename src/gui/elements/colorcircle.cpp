@@ -7,8 +7,8 @@ ColorCircle::ColorCircle():CircleFeatureGuiElement()
 }
 
 void ColorCircle::setValue(float v){
-    currentColor = ofColor::fromHsb(v*256,200,200);
-    weightCircleColor = currentColor;
+//    currentColor = ofColor::fromHsb(v*256,200,200);
+
     currentValue = v;
 }
 
@@ -65,8 +65,6 @@ void ColorCircle::setColorLimits(float min, float max){
     maxColor = max*255./360.;
 }
 
-
-
 void ColorCircle::drawShell(){
     ofPushMatrix();
     ofPushStyle();
@@ -78,22 +76,6 @@ void ColorCircle::drawShell(){
     ofSetLineWidth(2);
 
     exteriorPath.draw();
-//    exteriorPath2.draw();
-//    exteriorLine.draw();
-
-    //Draw control triangle
-    if (active && triangle){
-        ofPushMatrix();
-        ofFill();
-        int target_rot = this->targetValue*(rotationRange-2*fillOffset);
-        ofRotateDeg(rotationMin +target_rot+fillOffset);
-        ofTranslate(0, circleOuterRadius+4);
-        ofVec2f t1(0,0);
-        ofVec2f t2(5,10);
-        ofVec2f t3(-5,10);
-        ofDrawTriangle(t1, t2,t3);
-        ofPopMatrix();
-    }
 
     //Draw interior circle
     interiorPath.draw();

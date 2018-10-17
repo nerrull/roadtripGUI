@@ -297,6 +297,7 @@ void ofApp::update(){
         featureGuiElements[i+2]->setTarget(fc->getTargetValue(i));
         featureGuiElements[i+2]->setActive(fc->getActive(i));
     }
+
 }
 
 //--------------------------------------------------------------

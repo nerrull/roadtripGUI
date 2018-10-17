@@ -66,7 +66,7 @@ private:
         int spectrogramWidth = (int) image.getWidth();
         int spectrogramHeight= (int) image.getHeight();
         auto pixels = image.getPixels();
-        auto pixelref = pixels.getPixels();
+        auto pixelref = pixels.getData();
         memmove(pixelref, pixelref+spectrogramWidth, spectrogramWidth*spectrogramHeight - spectrogramWidth);
         image.setFromPixels(pixels);
         image.update();

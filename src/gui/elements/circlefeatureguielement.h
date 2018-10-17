@@ -18,7 +18,7 @@ public:
     virtual void drawFill();
     virtual void drawShell();
     virtual void drawText();
-
+    virtual void drawTriangle();
 
     virtual void setRange(int range);
     virtual void setPosition(int x, int y);

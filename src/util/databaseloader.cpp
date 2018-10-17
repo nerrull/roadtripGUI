@@ -40,7 +40,7 @@ void DatabaseLoader::loadHDF5Data(string database_path){
     for( int row =0; row<num_colors; row++){
         uint8_t h,s,v;
 
-        h = color_values[row*color_dim];
+        h = int(color_values[row*color_dim]/180. *255);
         s = color_values[row*color_dim+1];
         v = color_values[row*color_dim+2];
         ofColor c = c.fromHsb(h,s,v);

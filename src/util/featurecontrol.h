@@ -27,6 +27,9 @@
 const int IDLE_ACTIVE_TRANSITION = 0;
 const int IDLE_ACTIVE_STABLE =  1;
 const int COLOR_FEATURE_INDEX = 9;
+const int TILT_FEATURE_INDEX = 8;
+
+const int COLOR_ELEMENT_INDEX = 11;
 
 class FeatureControl
 {

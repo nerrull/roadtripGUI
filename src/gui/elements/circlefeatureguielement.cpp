@@ -104,20 +104,10 @@ void CircleFeatureGuiElement::translateToCenter(){
     ofTranslate(width/2, height/2);
 }
 
-void CircleFeatureGuiElement::drawShell(){
+void CircleFeatureGuiElement::drawTriangle(){
     ofPushMatrix();
     ofPushStyle();
-
     translateToCenter();
-
-    //Draw outer circle
-    ofSetColor(fillColor);
-    ofSetLineWidth(2);
-
-    exteriorPath.draw();
-//    exteriorPath2.draw();
-//    exteriorLine.draw();
-
     //Draw control triangle
     if (active && triangle){
         ofPushMatrix();
@@ -131,7 +121,23 @@ void CircleFeatureGuiElement::drawShell(){
         ofDrawTriangle(t1, t2,t3);
         ofPopMatrix();
     }
+    ofPopStyle();
+    ofPopMatrix();
+}
 
+void CircleFeatureGuiElement::drawShell(){
+    ofPushMatrix();
+    ofPushStyle();
+
+    translateToCenter();
+
+    //Draw outer circle
+    ofSetColor(fillColor);
+    ofSetLineWidth(2);
+
+    exteriorPath.draw();
+
+    //Draw min boundary line
     ofPushMatrix();
     ofRotateDeg(this->rotationMin);
     ofDrawLine(0,circleInnerRadius, 0, 0,circleOuterRadius, 0);
@@ -216,6 +222,7 @@ void CircleFeatureGuiElement::setValue(float v){
 
 void CircleFeatureGuiElement::draw(){
     drawShell();
+    drawTriangle();
     drawFill();
 }
 

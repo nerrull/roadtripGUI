@@ -268,7 +268,7 @@ void FeatureControl::playVideo(){
 
     (*fge)[0]->reset();
     (*fge)[0]->setValue(videoCycleTimer);
-
+    (*fge)[COLOR_ELEMENT_INDEX]->setWeightColor(dbl->colors[playingVideo.second]);
     videoStartTime = ofGetElapsedTimef();
     coms->publishVideoNow( playingVideo.first, true);
     updateFeatureValues(dbl->getFeaturesFromindex(playingVideo.second));
@@ -407,19 +407,36 @@ void FeatureControl::updateFeatureValues(vector<float> fv){
 
 void FeatureControl::incrementFeatureTarget(int index, float step){
     if (index ==COLOR_FEATURE_INDEX) {
-        if(targetFeatureValues[index]+step >=1.){
-            targetFeatureValues[index] = 0.;
+        float t;
+        targetFeatureValues[index] = modf(targetFeatureValues[index]+step, &t );
+        if (targetFeatureValues[index] <0.){
+            targetFeatureValues[index] = 1+targetFeatureValues[index];
         }
     }
-    targetFeatureValues[index] =CLAMP(targetFeatureValues[index]+step, 0., 1.);
+    if (index ==TILT_FEATURE_INDEX) {
+        targetFeatureValues[index] = CLAMP(targetFeatureValues[index]+step, -0.5, 0.5);
+    }
+    else{
+        targetFeatureValues[index] =CLAMP(targetFeatureValues[index]+step, 0., 1.);
+
+    }
     updateActiveFeature(index, 1);
 }
 
 void FeatureControl::toggleFeatureTarget(int index){
     float v = targetFeatureValues[index];
-    int target_value = 0.;
-    if (v<.5) target_value = 1.;
-    targetFeatureValues[index] =CLAMP(target_value, 0., 1.);
+
+    if (index ==COLOR_FEATURE_INDEX){
+        float t;
+        float target_value = modf(v +0.5, &t);
+        targetFeatureValues[index] =target_value;
+    }
+    else{
+        int target_value = 0.;
+        if (v<.5) target_value = 1.;
+        targetFeatureValues[index] =CLAMP(target_value, 0., 1.);
+    }
+
     updateActiveFeature(index, 1);
 }
 

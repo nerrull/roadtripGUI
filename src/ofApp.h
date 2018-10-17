@@ -11,7 +11,6 @@
 #include "util/featurecontrol.h"
 
 class ofApp : public ofBaseApp{
-
 public:
     //Init functions
     void initAudio();
