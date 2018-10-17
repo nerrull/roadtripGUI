@@ -17,31 +17,10 @@ AudioWaveform::AudioWaveform()
 
     fft = ofxFft::create(INTERNAL_BUFFER_LENGTH, OF_FFT_WINDOW_HAMMING);
     audioBins.resize(fft->getBinSize());
-
-    spectrogram.allocate(2*ofGetWidth()/3, ofGetHeight()/3, OF_IMAGE_GRAYSCALE);
-    spectrogram.setColor(ofColor::black);
-
-    int n = (int) spectrogram.getWidth();
-    int maxBin = fft->getBinFromFrequency(5000);
-    int spectrogramWidth = (int) spectrogram.getWidth();
-
-    float binstep = maxBin/float(n);
-    bool expIndex = Settings::getFloat("log_spectral_axis");
+    spectrogram.initialize(fft,2*ofGetWidth()/3, ofGetHeight()/3 );
     runningMax =1.;
-    for(int i = 0; i < n; i++) {
-//        js.push_back((n - i - 1) * spectrogramWidth +  spectrogramWidth-1);
-//        js.push_back((n-1)*spectrogramWidth+ i);
-        js.push_back(i);
 
 
-        int expi = powFreq(float(i)/n +0.5)*i;
-        if (expIndex){
-            binIndexes.push_back(expi*binstep);
-        }
-        else{
-            binIndexes.push_back(i*binstep);
-        }
-    }
 }
 
 void AudioWaveform::receiveBuffer(ofSoundBuffer& buffer){
@@ -56,16 +35,6 @@ void AudioWaveform::receiveBuffer(ofSoundBuffer& buffer){
 
 }
 
-void AudioWaveform::shiftSpectrogram(){
-    int spectrogramWidth = (int) spectrogram.getWidth();
-    int spectrogramHeight= (int) spectrogram.getHeight();
-    auto pixels = spectrogram.getPixels();
-    auto pixelref = pixels.getPixels();
-
-    memmove(pixelref+spectrogramWidth, pixelref, spectrogramWidth*spectrogramHeight - spectrogramWidth);
-    spectrogram.setFromPixels(pixels);
-    spectrogram.update();
-}
 
 void AudioWaveform::copyBuffer(){
     std::lock_guard<std::mutex> lock(bufferMutex);
@@ -174,17 +143,9 @@ void AudioWaveform::update(){
     for(int i = 0; i < fft->getBinSize(); i++) {
         audioBins[i] /= runningMax;
     }
-
-    int n = (int) spectrogram.getWidth();
-    shiftSpectrogram();
-
-    for(int i = 0; i < n; i++) {
-        spectrogram.setColor(js[i] + n*5, (unsigned char) (255. * audioBins[binIndexes[i]]));
-    }
+    spectrogram.update(audioBins);
 }
 
 
-float AudioWaveform::powFreq(float i) {
-    return powf(i, 3);
-}
+
 

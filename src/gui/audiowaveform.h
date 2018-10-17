@@ -4,6 +4,7 @@
 #include "ofMain.h"
 #include <mutex>
 #include "ofxFft.h"
+#include "spectrogramvisualizer.h"
 
 #define IN_AUDIO_BUFFER_LENGTH 1024
 #define INTERNAL_BUFFER_LENGTH IN_AUDIO_BUFFER_LENGTH*4
@@ -11,8 +12,6 @@ class AudioWaveform
 {
 public:
    AudioWaveform();
-
-
    void receiveBuffer(ofSoundBuffer& buffer);
    void setLayout(int x, int y, int w, int h);
    void draw();
@@ -22,16 +21,13 @@ public:
    void drawWaveform(int w, int h);
    void shiftSpectrogram();
 
-
-
 private:
 
    int xOffset, yOffset, width, height;
-
    void copyBuffer();
    void copyLeftRightBuffer();
    float powFreq(float i);
-
+   SpectrogramVisualizer spectrogram;
 
    std::vector<float> soundBuffer;
    std::vector<float> drawBuffer;
@@ -44,19 +40,13 @@ private:
    bool toggle;
    ofSoundBuffer leftBuffer;
    ofSoundBuffer rightBuffer;
+
    ofxFft* fft;
    vector<float> drawBins, middleBins, audioBins;
 
-   ofImage spectrogram;
    float runningMax;
 
    int spectrogramOffset;
-   vector<int> js;
-   vector<int> binIndexes;
-
-
-
-
 
 };
 
