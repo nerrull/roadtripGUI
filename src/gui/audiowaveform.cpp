@@ -65,7 +65,7 @@ void AudioWaveform::draw2D(){
     for (unsigned int i = 0; i < IN_AUDIO_BUFFER_LENGTH; i++){
         ofSetColor(0, i *255.0/IN_AUDIO_BUFFER_LENGTH,0);
 
-        ofCircle(width/2 + leftDrawBuffer[i]*2000, height/2 -rightDrawBuffer[i]*2000, 0, 1);
+        ofDrawCircle(width/2 + leftDrawBuffer[i]*2000, height/2 -rightDrawBuffer[i]*2000, 0, 1);
         //ofVertex(width/2 - leftDrawBuffer[i]*4000, height/2 -rightDrawBuffer[i]*4000);
     }
    //   ofEndShape();

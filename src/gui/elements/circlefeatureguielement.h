@@ -3,6 +3,7 @@
 
 #include "ofMain.h"
 #include "ofxFatLine.h"
+
 class CircleFeatureGuiElement
 {
 public:
@@ -10,7 +11,7 @@ public:
     CircleFeatureGuiElement(int w, int h, int xOffset, int yOffset);
 
     void setName(string n);
-    void setCircleOffset(int);
+    void increaseCircleOffset(int);
     void setWeightColor(ofColor c);
     void setWeightColors(ofColor c1, ofColor c2);
 
@@ -25,7 +26,7 @@ public:
     virtual void setSize(int w, int h);
     virtual void setWeight(float w){currentWeight = w;}
     virtual void setValue(float v);
-    virtual void setValue(int v){currentValue = v;}
+    virtual void setSecondary(int v){}
 
     virtual void setTarget(float v){targetValue = v;}
     virtual void setActive(bool v);

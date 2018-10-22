@@ -31,9 +31,6 @@ public:
 
     void setSpeed(int value);
     void toggleFeatureTarget(int index);
-    void incrementSpeed(int step);
-    void incrementSearchRadius(int step);
-
 
     float getColorValue(string id);
     void handleKnobInput(ofxOscMessage m);

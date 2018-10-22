@@ -10,15 +10,19 @@
     "dev_mode":false,
     "english":false,
 
-    "idle_timeout": 10, //Seconds before idle behaviour kicks in
+    "idle_timeout": 20, //Seconds before idle behaviour kicks in
     "idle_videos": 3, //Minimum number of videos before switching to idle activity
     "idle_activity_min_interval": 60, //Period at which idle activity occurs
-    "idle_activity_transition_duration": 5, //Duration of idle activity transition
     "idle_activity_num_updates": 20, //Number of videos during transition
 
-    "log_spectral_axis":true,
-    "feature_decay_sec": 1.5,
-    "feature_decay_duration": 1.5,
+    "log_spectral_axis":false,
+    "feature_decay_sec": 1,
+    "feature_timeout": 3,
 
-    "point_mode":1 //0 for 2D, 1 for 3D
+    "r_off": 0,
+    "b_off": 0,
+    "r_off_purp": 0,
+
+
+    "point_mode":0 //0 for 2D, 1 for 3D
 }

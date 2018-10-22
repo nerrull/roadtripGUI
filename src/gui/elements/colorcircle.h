@@ -13,7 +13,6 @@ public:
     void drawShell();
     void setValue(float);
     void updateFillLine();
-    void setSize(int w, int h);
     void setActive(bool);
     void setColorLimits(float, float);
 

@@ -4,6 +4,7 @@
 #endif // COMMUNICATION_H
 #include "ofMain.h"
 #include "ofxOsc.h"
+#include "ofxJsonSettings.h"
 
 #define PLAYING_RECEIVE_PORT 44445
 #define PYTHON_CONTROL_RECEIVE_PORT 44444
@@ -21,12 +22,21 @@ public:
     ofxOscReceiver receiver_playing;
     int outgoing_player_message_counter;
     int outgoing_controller_message_counter;
+    int r_off;
+    int b_off;
+    int r_off_purp;
 
+    const int BAD_INDEXES_VERY_RED  [2 ] = {5,12};
+    const int BAD_INDEXES_PURP[10] = {4,6,9,11,14,15,20,21,22,23};
 
     CommunicationManager(){
         std::cout << "listening for osc messages on port " << CONTROL_RECEIVE_PORT << " and "<<  PLAYING_RECEIVE_PORT<<"\n";
-        receiver_python_controller.setup( PYTHON_CONTROL_RECEIVE_PORT );
+        Settings::get().load("settings.json");
+        r_off=    Settings::getInt("r_off"); //red offset
+        r_off_purp=    Settings::getInt("r_off_purp"); //red offset
+        b_off=    Settings::getInt("b_off"); //red offset
 
+        receiver_python_controller.setup( PYTHON_CONTROL_RECEIVE_PORT );
         receiver_controller.setup( CONTROL_RECEIVE_PORT );
         receiver_playing.setup( PLAYING_RECEIVE_PORT );
 
@@ -76,6 +86,23 @@ public:
         value = CLAMP(value, 0, 4095);
         m.setAddress("/RGB");
         m.addInt32Arg(knob_index);
+//        int v= 4095;
+//        int vr = v;
+//        int vg = v;
+//        int vb = v;
+//        for (auto b1: BAD_INDEXES_VERY_RED){
+//            if (b1 == knob_index){
+//                vr = CLAMP(vr- r_off, 0,4095);
+//            }
+//        }
+//        for (auto b2: BAD_INDEXES_PURP){
+//            if (b2 == knob_index){
+//                vb = CLAMP(vb- b_off, 0,4095);
+//            }
+//        }
+//        m.addInt32Arg(vg-2000);
+//        m.addInt32Arg(vg);
+//        m.addInt32Arg(0);
         m.addInt32Arg(value);
         m.addInt32Arg(value);
         m.addInt32Arg(value);

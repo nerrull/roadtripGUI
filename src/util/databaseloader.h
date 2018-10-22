@@ -19,7 +19,8 @@ public:
         return pair<string, int> (video_names[randIndex], randIndex);
     }
 
-    vector<string>  getFeatureNames();
+    const vector<string>  getFeatureNames();
+
     vector<string>  getVideoNames();
     vector<string>  getVideoNamesFromIndexes(vector<int> index);
 

@@ -3,15 +3,22 @@
 
 #include "ofMain.h"
 #include "circlefeatureguielement.h"
+#include "featurecontrol.h"
+
 
 class DurationElement: public CircleFeatureGuiElement
 {
 public:
-    DurationElement():CircleFeatureGuiElement(){
-        timeText = "MAX";
-        triangle = false;
-        setActive(true);
+//    static const int NUM_SPEEDS = 16;
+//    static const string SPEEDSTRINGS [17]= {"Max", "4", "3", "2", "1.5", "1", "2/3", "1/2","1/3","1/4","1/6", "1/8", "1/10", "1/12", "1/16", "1/24", "1/32"};
+    const string SPEEDSTRINGS [17]= {"Max", "4", "3", "2", "1.5", "1", "2/3", "1/2","1/3","1/4","1/6", "1/8", "1/10", "1/12", "1/16", "1/24", "1/32"};
+    const int NUM_SPEEDS = 16;
 
+
+    DurationElement():CircleFeatureGuiElement(){
+        timeText = "Max";
+        triangle = true;
+        setActive(true);
     }
 
     void drawText(){
@@ -26,23 +33,22 @@ public:
 
         ofSetColor(255);
         ofPushMatrix();
-        ofTranslate(offset,fontHeight/2. );
+        ofTranslate(offset,6 );
         font.drawString(this->timeText,0,0);
         ofPopMatrix();
 
-
         ofPopStyle();
         ofPopMatrix();
-
     }
 
     void setValue(float d){
+        this->currentValue = this->currentValue*this->duration_frames /(d*60);
         float duration_seconds = d;
-        float duration_frames = duration_seconds*60.;
+        duration_frames = duration_seconds*60.;
         this->incrementValue = 1./duration_frames;
 
-        ostringstream os;
-        os.precision(2);
+//        ostringstream os;
+//        os.precision(2);
 //        if (d >4.){
 //            os<< "MAX";
 //        }
@@ -52,8 +58,13 @@ public:
 
 //        else if (d < 1.){
 //        }
-        os <<d<<"s";
-        timeText = os.str();
+//        os <<d<<"s";
+//        timeText = os.str();
+    }
+
+    void setSecondary(int i){
+        this->targetValue =1.- float(i)/NUM_SPEEDS;
+        timeText = SPEEDSTRINGS[i];
     }
 
 
@@ -71,6 +82,7 @@ public:
     float incrementValue = 1.;
     float minRadius = 3.;
     string timeText ="";
+    int duration_frames;
 
 };
 

@@ -22,8 +22,6 @@ PointCloudRenderer::PointCloudRenderer()
     scaleFactor  = 1000;
 }
 
-
-
 void PointCloudRenderer::setLayout(int x, int y, int w, int h){
     viewMain.x = x+2;
     viewMain.y = y+2;
@@ -53,6 +51,19 @@ void PointCloudRenderer::initPoints(vector<ofVec3f> points, vector<ofColor>c){
     visualization_points.clear();
     mesh.setMode(OF_PRIMITIVE_POINTS);
     colors = c;
+
+    int thresh = 60;
+    for (int i =0; i<colors.size(); i++){
+        float h,s,b;
+        colors[i].getHsb(h, s,b);
+        if (s < thresh){
+            s= thresh;
+        }
+        if (b < thresh){
+            b= thresh;
+        }
+        colors[i]= ofColor::fromHsb(h,s,b);
+    }
 
     int index=  0;
     mesh.getVertices().resize(points.size());
@@ -134,6 +145,9 @@ void PointCloudRenderer::draw()
     ofVec3f centerPoint = ofVec3f(0.,0.,0.);
 
     cam.begin(viewMain);
+//    ofBackgroundGradient(ofColor(0),ofColor(25));
+//    ofBackground(ofColor(245));
+    ofBackground(0);
     ofPushMatrix();
     ofRotateZDeg(90.);
 
@@ -154,8 +168,9 @@ void PointCloudRenderer::draw()
     ofDisablePointSprites(); // not needed for GL3/4
 
     billboardShader.end();
-
+    ofEnableBlendMode(OF_BLENDMODE_ADD);
     c_line.draw();
+    ofDisableBlendMode();
 
 
     ofPopMatrix();

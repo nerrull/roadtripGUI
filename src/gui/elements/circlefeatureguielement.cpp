@@ -39,7 +39,6 @@ void CircleFeatureGuiElement::setRange(int range){
     int diff = 360 - range;
     this->rotationMin = diff/2;
     this->rotationMax = 360-diff/2;
-
 }
 
 void CircleFeatureGuiElement::setPosition(int x, int y){
@@ -50,7 +49,7 @@ void CircleFeatureGuiElement::setPosition(int x, int y){
 void CircleFeatureGuiElement::setSize(int w, int h){
     this->width = w;
     this->height = h;
-    this->circleOuterRadius = min(width, height)/2;
+    this->circleOuterRadius = height/2-20;
     this->circleInnerRadius = circleOuterRadius-(2*fillWidth +6);
     this->fillRadius =circleInnerRadius + (circleOuterRadius-circleInnerRadius)*0.5;
 
@@ -62,10 +61,12 @@ void CircleFeatureGuiElement::setSize(int w, int h){
     exteriorPath.rotateDeg(90, ofVec3f(0,0,1));
     interiorPath.rotateDeg(90, ofVec3f(0,0,1));
 
+    circleOffset = height/2 -circleOuterRadius;
+
 }
 
-void CircleFeatureGuiElement::setCircleOffset(int o){
-    circleOffset = o;
+void CircleFeatureGuiElement::increaseCircleOffset(int o){
+    circleOffset -= o;
 }
 
 void CircleFeatureGuiElement::setName(string n){
@@ -89,8 +90,8 @@ void CircleFeatureGuiElement::drawText(){
     ofSetColor(255);
     ofPushMatrix();
 
-    int y= height+25;
-    ofTranslate(offset,y );
+    int y= height -10;
+    ofTranslate(offset, y  );
     font.drawString(this->name,0,0);
     ofPopMatrix();
 
@@ -100,7 +101,7 @@ void CircleFeatureGuiElement::drawText(){
 
 void CircleFeatureGuiElement::translateToCenter(){
     ofTranslate(xOffset, yOffset);
-    ofTranslate(0, circleOffset);
+    ofTranslate(0, -circleOffset);
     ofTranslate(width/2, height/2);
 }
 
@@ -224,6 +225,8 @@ void CircleFeatureGuiElement::draw(){
     drawShell();
     drawTriangle();
     drawFill();
+
+//    ofDrawRectangle(xOffset, yOffset, width, height);
 }
 
 void CircleFeatureGuiElement::setWeightColor(ofColor c){

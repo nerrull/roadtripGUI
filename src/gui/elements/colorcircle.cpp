@@ -12,26 +12,6 @@ void ColorCircle::setValue(float v){
     currentValue = v;
 }
 
-void ColorCircle::setSize(int w, int h){
-    this->width = w;
-    this->height = h;
-
-    this->circleOuterRadius = min(width, height)/2 -10;
-    this->circleInnerRadius = circleOuterRadius-(2*fillWidth +6);
-    this->fillRadius =circleInnerRadius + (circleOuterRadius-circleInnerRadius)*0.5;
-    this->fillWidth =4;
-
-    exteriorPath.clear();
-    interiorPath.clear();
-    exteriorPath.arc(ofVec3f(0,0,0), this->circleOuterRadius, this->circleOuterRadius, this->rotationMin, this->rotationMax, 100);
-    interiorPath.arc(ofVec3f(0,0,0), this->circleInnerRadius, this->circleInnerRadius, this->rotationMin, this->rotationMax, 100);
-
-    exteriorPath.rotateDeg(90, ofVec3f(0,0,1));
-    interiorPath.rotateDeg(90, ofVec3f(0,0,1));
-    circleOffset = height/2 -circleOuterRadius;
-    updateFillLine();
-
-}
 
 void ColorCircle::setActive(bool v){
     CircleFeatureGuiElement::setActive(v);
@@ -102,7 +82,7 @@ void ColorCircle::drawFill(){
     ofRotateDeg(fillOffset);
     int current_rot = this->currentValue*(rotationRange -fillOffset*2);
     ofSetLineWidth(2);
-    ofSetColor(255);
+    ofSetColor(fillColor);
     ofRotateDeg(fillOffset);
     ofRotateDeg(current_rot);
     ofDrawLine(0,circleInnerRadius,0,circleOuterRadius);

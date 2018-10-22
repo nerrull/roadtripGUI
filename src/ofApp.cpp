@@ -2,15 +2,12 @@
 #include "ofxJsonSettings.h"
 
 
-template <typename T> int sgn(T val) {
-    return (T(0) < val) - (val < T(0));
-}
-
-
 //--------------------------------------------------------------
 void ofApp::setup(){
     ofGetWindowPtr()->setVerticalSync(true);
     ofSetVerticalSync(true);
+    ofSetFrameRate(60);
+
     ofSetDrawBitmapMode(OF_BITMAPMODE_MODEL);
     ofEnableSmoothing();
     ofEnableAlphaBlending();
@@ -135,9 +132,9 @@ void ofApp::initNames(){
     featureNamesEn.push_back("Bike/Pedestrian");
 
     featureNamesFr.push_back("Volume");
-    featureNamesFr.push_back("Hauteur");
+    featureNamesFr.push_back("Hauteur Spectrale");
     featureNamesFr.push_back("Percussion");
-    featureNamesFr.push_back("Largeur\nde bande");
+    featureNamesFr.push_back("Largeur de bande");
     featureNamesFr.push_back("Vitesse");
     featureNamesFr.push_back("Instabilité");
     featureNamesFr.push_back("Régime Moteur");
@@ -194,14 +191,17 @@ void ofApp::setLayout(){
     int rightWidth = windowWidth -int(floor(div*windowWidth));
 
 
-    imageManager.setLayout(leftWidth, 0, rightWidth, 3*windowHeight/4);
-    pointCloudRender.setLayout(0, windowHeight/4, leftWidth, 2* windowHeight/4);
-    waveform.setLayout(0,0, leftWidth, windowHeight/4 );
+
 
     //Place knobs
-    int controlSectionHeight = windowHeight/4;
-    int knobWidth = windowWidth/numKnobs;
+    float knobWidth = windowWidth/float(numKnobs);
     int offset = knobWidth;
+
+
+    int remainder = windowWidth - knobWidth*23;
+    imageManager.setLayout(leftWidth, 0, rightWidth-3, 3*windowHeight/4);
+    pointCloudRender.setLayout(0, windowHeight/4, leftWidth, 2* windowHeight/4);
+    waveform.setLayout(0,0, leftWidth, windowHeight/4 );
 
     float max_row_1_height  =0;
     float max_row_2_height = 0;
@@ -214,38 +214,48 @@ void ofApp::setLayout(){
         }
     }
 
-    int textHeight = max_row_1_height + max_row_2_height +20;
-    int knobSectionHeight = controlSectionHeight - textHeight;
+    int controlSectionHeight = windowHeight/4 -5;
+    int textHeight = max_row_1_height + max_row_2_height;
+    int knobSectionHeight = controlSectionHeight;
     int elementHeight = knobSectionHeight/2;
-    int elementWidth = knobWidth*1.1;
+    float elementWidth = knobWidth;
     int firstRowOffset =max_row_1_height;
-    int secondRowOffset =max_row_1_height+elementHeight ;
+    int secondRowOffset =elementHeight ;
 
     //Initialize special knobs
     featureGuiElements[0]->setName(durationName);
     featureGuiElements[1]->setName(neighbourName);
     clickRectangles.clear();
-    int x, y;
-    x = 0;
+    float x, y;
+    x =0;
     for (int i=0; i<featureGuiElements.size(); i++){
         y = windowHeight - controlSectionHeight;
-        if (i%2 ==0){
-            featureGuiElements[i]->setCircleOffset(firstRowOffset);
+
+        if (i%2 ==1){
+            y +=secondRowOffset;
+        }
+        if (i ==0){
+            featureGuiElements[i]->setPosition(x+6,y);
+        }
+        else if (i ==featureGuiElements.size()-1){
+            featureGuiElements[i]->setPosition(x-6,y);
         }
         else{
-            y +=secondRowOffset;
-            featureGuiElements[i]->setCircleOffset(firstRowOffset);
+            featureGuiElements[i]->setPosition(x,y);
         }
 
-        featureGuiElements[i]->setPosition(x,y);
         featureGuiElements[i]->setSize(elementWidth, elementHeight);
         clickRectangles.push_back(ofRectangle(x,y,elementWidth, elementHeight));
+
+        featureGuiElements[i]->increaseCircleOffset(15);
 
         if (i>=2){
             featureGuiElements[i]->setName(featureNames[i-2]);
         }
         x+=knobWidth;
     }
+    featureGuiElements[11]->increaseCircleOffset(-5);
+
 
     ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Offset "<<rectangleOffset;
     ofLogError(ofToString(ofGetElapsedTimef(),3)) << "Remaining space "<< spaceRemainder;
@@ -286,17 +296,8 @@ void ofApp::update(){
     featureGuiElements[0]->update(); //Update speed timer
     featureGuiElements[1]->update(); //Update search radius
 
-    for (int i = 0; i <fc->numFeatures(); i++){
-        //Do some interpolation on the value
-        float diff = fc->getValueDiff(i);
-        float inc = sgn(diff)*diff*diff;
-        fc->incrementLastFeatureValue(i,inc);
+    fc->updateFeatureElements();
 
-        featureGuiElements[i+2]->setWeight(fc->getWeight(i));
-        featureGuiElements[i+2]->setValue(fc->getLastValue(i));
-        featureGuiElements[i+2]->setTarget(fc->getTargetValue(i));
-        featureGuiElements[i+2]->setActive(fc->getActive(i));
-    }
 
 }
 
@@ -330,11 +331,11 @@ void ofApp::draw(){
 //        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     imageManager.draw();
     drawControlsText();
-
+    std::stringstream strm;
+    strm << "fps: " << ofGetFrameRate();
+    ofDrawBitmapString(strm.str(),20, 20);
     if (DEV_MODE){
-        std::stringstream strm;
-        strm << "fps: " << ofGetFrameRate();
-        ofDrawBitmapString(strm.str(),20, 20);
+
         drawDebug();
     }
 
@@ -344,14 +345,7 @@ void ofApp::draw(){
 
 void ofApp::drawDebug(){
     ofPushMatrix();
-    ofTranslate(ofGetWidth()/3*2,20);
-    ostringstream oss;
-    for (auto video:videoIndexes){
-        oss<<video <<endl;
-    }
-    oss <<endl;
-    ofDrawBitmapString(oss.str(),0,0);
-    ofTranslate(30,0);
+    ofTranslate(ofGetWidth()/3*2 -70,20);
     fc->draw();
     ofPopMatrix();
 
@@ -399,17 +393,9 @@ void ofApp::toggleLanguage(){
     setLayout();
 }
 
-
-
 void ofApp::playRandomVideo(){
     fc->playRandomVideo();
 }
-
-void ofApp::incrementSearchRadius(int step){
-    int nv= this->fc->incrementSearchRadius(step);
-    this->featureGuiElements[1]->setValue(nv);
-}
-
 void ofApp::updateOSC() {
     // hide old messages
     while( coms.receiver_playing.hasWaitingMessages() )
@@ -483,7 +469,8 @@ void ofApp::handlePythonMessages(){
                         fc->incrementSpeed(diff);
                     }
                     if (i ==1){
-                        incrementSearchRadius(diff*100);
+                        fc->incrementSearchRadius(diff);
+
                     }
 
                     if (i> 1){
@@ -526,7 +513,7 @@ void ofApp::handleKnobInput(ofxOscMessage m){
     if (i ==2){
         int step =m.getArgAsInt(1);
         if (step ==0) step = -1;
-        incrementSearchRadius(step);
+        this->fc->incrementSearchRadius(step);
         return;
     }
 
@@ -540,11 +527,12 @@ void ofApp::handleButtonInput(int index){
     fc->registerInputActivity();
 
     if (index ==1){
-        fc->setSpeed(0);
+        fc->toggleSpeed();
         return;
     }
 
     if (index ==2){
+        fc->toggleNeighbours();
         //Todo: Set number of neighbours to something else
         return;
     }

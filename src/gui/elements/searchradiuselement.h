@@ -6,7 +6,7 @@ class SearchRadiusElement: public CircleFeatureGuiElement
 {
 public:
     SearchRadiusElement():CircleFeatureGuiElement(){
-         triangle = false;
+         triangle = true;
          setActive(true);
     }
 
@@ -26,14 +26,13 @@ public:
         ofPopMatrix();
     }
 
-
-
-    void setValue(int v){
-        this->num_neighbours =v;
+    void setValue(float v){
+        this->num_neighbours = int(v);
         this->currentValue = float(v)/max_num_neighbours;
+        this->targetValue = currentValue;
+
         updateFillLine();
     }
-
 
     ofColor currentColor;
     float currentRadius= 0.;

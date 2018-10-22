@@ -39,7 +39,6 @@ void DatabaseLoader::loadHDF5Data(string database_path){
     colors_ptr->read(color_values);
     for( int row =0; row<num_colors; row++){
         uint8_t h,s,v;
-
         h = int(color_values[row*color_dim]/180. *255);
         s = color_values[row*color_dim+1];
         v = color_values[row*color_dim+2];
@@ -132,7 +131,7 @@ const vector<vector<float>>* DatabaseLoader::getFeatures(){
     return &feature_values;
 }
 
-vector<string>  DatabaseLoader::getFeatureNames(){
+const vector<string>  DatabaseLoader::getFeatureNames(){
     return feature_names;
 }
 

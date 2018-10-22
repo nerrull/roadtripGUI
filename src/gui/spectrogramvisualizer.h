@@ -54,6 +54,7 @@ public:
         for(int i = 0; i < n; i++) {
             image.setColor(js[i] , (unsigned char) (255. * audioBins[binIndexes[i]]));
         }
+        image.update();
     }
 
 private:
@@ -69,7 +70,6 @@ private:
         auto pixelref = pixels.getData();
         memmove(pixelref, pixelref+spectrogramWidth, spectrogramWidth*spectrogramHeight - spectrogramWidth);
         image.setFromPixels(pixels);
-        image.update();
     }
 
 
