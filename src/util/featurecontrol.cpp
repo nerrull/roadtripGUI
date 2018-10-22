@@ -98,7 +98,7 @@ void FeatureControl::update(){
 //                cycleVideo();
 //            }
 
-            if (videoCycleIndex >= (idleActivityNumUpdates-1)){
+            if (videoCycleIndex >= (videoIndexes.size()-1)){
                 idle_active_state = IDLE_ACTIVE_STABLE;
                 setSpeed(0);
             }
@@ -167,24 +167,18 @@ void FeatureControl::toIdleActive(){
 
     idleActivityValues.clear();
     int half_point = idleActivityNumUpdates/2;
-
-    for (int step =0; step < idleActivityNumUpdates; step++){
-        switch (activityType){
-        case ActivityTypes::ASCENDING:
-            idleActivityValues.push_back(step*1./(idleActivityNumUpdates-1));
-            break;
-        case ActivityTypes::UP_DOWN:
-            //0 to 1
-            if (step <half_point){
-                idleActivityValues.push_back(step*1./(half_point-1));
-            }
-            //1 to 0
-            else{
-                idleActivityValues.push_back(1 - (step-half_point) *1./(half_point-1));
-            }
-            break;
-
-        }
+    int num_steps =idleActivityNumUpdates;
+    if (activityType == ActivityTypes::UP_DOWN){
+        num_steps = 15;
+    }
+    for (int step =0; step <= num_steps; step++){
+        idleActivityValues.push_back(step*1./(num_steps));
+    }
+    if (activityType ==ActivityTypes::UP_DOWN){
+        vector<float> rev (idleActivityValues.begin(),idleActivityValues.end());
+        std::reverse(rev.begin(), rev.end());
+        rev.erase(rev.begin());
+        idleActivityValues.insert(idleActivityValues.end(), rev.begin(), rev.end());
     }
     lastActivityTime = ofGetElapsedTimef();
     idleActivatedTime = ofGetElapsedTimef();
@@ -202,7 +196,16 @@ void FeatureControl::toIdleActive(){
         tempSearchvalues[currentActiveFeatureIndex] = value;
 //        fKNN->getKNN(tempSearchvalues, tempFeatureWeights, searchDistances);
         fSearch->getKNN(tempSearchvalues, tempFeatureWeights, searchDistances);
-        videoIndexes.push_back( fSearch->getSearchResultsDistance(1,true, numVideosInRange)[0]);
+        vector<int> results =fSearch->getSearchResultsDistance(3,true, numVideosInRange);
+        int index = results[0];
+        int i =0;
+        bool already_in_list =std::find(videoIndexes.begin(), videoIndexes.end(), index) != videoIndexes.end();
+        while (already_in_list){
+            i++;
+            index= results[i];
+            already_in_list=std::find(videoIndexes.begin(), videoIndexes.end(), index) != videoIndexes.end();
+        }
+        videoIndexes.push_back(index);
     }
     videos =  dbl->getVideoPairsFromIndexes(videoIndexes);
     videoMaxIndex = videos.size();

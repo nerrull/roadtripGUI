@@ -132,7 +132,7 @@ void ofApp::initNames(){
     featureNamesEn.push_back("Bike/Pedestrian");
 
     featureNamesFr.push_back("Volume");
-    featureNamesFr.push_back("Hauteur Spectrale");
+    featureNamesFr.push_back("Hauteur spectrale");
     featureNamesFr.push_back("Percussion");
     featureNamesFr.push_back("Largeur de bande");
     featureNamesFr.push_back("Vitesse");
@@ -199,7 +199,7 @@ void ofApp::setLayout(){
 
 
     int remainder = windowWidth - knobWidth*23;
-    imageManager.setLayout(leftWidth -1, 0, rightWidth +1, 3*windowHeight/4);
+    imageManager.setLayout(leftWidth -1, 0, rightWidth , 3*windowHeight/4);
     pointCloudRender.setLayout(0, windowHeight/4, leftWidth, 2* windowHeight/4);
     waveform.setLayout(0,0, leftWidth, windowHeight/4 );
 
@@ -331,10 +331,10 @@ void ofApp::draw(){
 //        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     imageManager.draw();
     drawControlsText();
-    std::stringstream strm;
-    strm << "fps: " << ofGetFrameRate();
-    ofDrawBitmapString(strm.str(),20, 20);
     if (DEV_MODE){
+        std::stringstream strm;
+        strm << "fps: " << ofGetFrameRate();
+        ofDrawBitmapString(strm.str(),20, 20);
 
         drawDebug();
     }
