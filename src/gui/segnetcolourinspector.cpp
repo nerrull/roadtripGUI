@@ -47,10 +47,10 @@ void SegnetColourInspector::draw(){
     ofTranslate(xOffset,yOffset);
     ofFill();
 
-    int rectWidth = width/9;
+    float rectWidth = width/9.;
     int rectHeight = height;
 
-    int hOffset, wOffset;
+    float hOffset, wOffset;
     wOffset=0;
     hOffset=0;
     int pad = 3;

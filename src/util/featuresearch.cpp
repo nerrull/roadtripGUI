@@ -26,6 +26,7 @@ float FeatureSearch::getDistance(const VideoItem video){
 FeatureSearch::FeatureSearch(DatabaseLoader *db)
 {
     dbl = db;
+    threshold_distance =0.05;
     for(int i =0; i< db->feature_values.size(); i++){
         videos.push_back(VideoItem(db->video_names[i], i));
     }
@@ -54,11 +55,12 @@ vector<int> FeatureSearch::getSearchResultsDistance(int minVideos, bool shuffle,
     for (std::size_t i = 0; i < numSearchPoints; i++)
     {
         float v =searchDistances[i];
-        nearest_videos.push_back(videos[i].videoIndex);
-        n_v++;
         if (v > threshold_distance){
             break;
         }
+        nearest_videos.push_back(videos[i].videoIndex);
+        n_v++;
+
     }
     numWithinRange = int (nearest_videos.size());
     if (shuffle){

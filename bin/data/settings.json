@@ -16,8 +16,8 @@
     "idle_activity_num_updates": 20, //Number of videos during transition
 
     "log_spectral_axis":false,
-    "feature_decay_sec": 1,
-    "feature_timeout": 3,
+    "feature_decay_sec": 0.5,
+    "feature_timeout": 2,
 
     "r_off": 0,
     "b_off": 0,

@@ -26,7 +26,7 @@ public:
     vector<int> nearest_videos;
 
     int numSearchPoints = 64;
-    int threshold_distance = 0.05;
+    float threshold_distance = 0.05;
     std::default_random_engine rng;
 
     vector<float> targetFeatures;

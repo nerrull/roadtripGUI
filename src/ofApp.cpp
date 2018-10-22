@@ -199,7 +199,7 @@ void ofApp::setLayout(){
 
 
     int remainder = windowWidth - knobWidth*23;
-    imageManager.setLayout(leftWidth, 0, rightWidth-3, 3*windowHeight/4);
+    imageManager.setLayout(leftWidth -1, 0, rightWidth +1, 3*windowHeight/4);
     pointCloudRender.setLayout(0, windowHeight/4, leftWidth, 2* windowHeight/4);
     waveform.setLayout(0,0, leftWidth, windowHeight/4 );
 
