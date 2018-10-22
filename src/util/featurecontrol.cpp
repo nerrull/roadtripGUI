@@ -12,14 +12,15 @@ FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,
     this->coms = coms;
     this->fge = guiElements;
     this->pcr = pcr;
-    this->fKNN = new FeatureKNN(dbl);
+//    this->fKNN = new FeatureKNN(dbl);
+    this->fSearch = new FeatureSearch(dbl);
     Settings::get().load("settings.json");
     idleTimeout =  Settings::getInt("idle_timeout"); //seconds
     idleMinVideos=  Settings::getInt("idle_videos"); //seconds
+    featureTimeout = Settings::getFloat("feature_timeout");
 
-    featureDecayRate = Settings::getFloat("feature_decay_sec")/60.;
+    featureDecayRate = 1./(60.*Settings::getFloat("feature_decay_sec"));
     idleActivityInterval = Settings::getFloat("idle_activity_min_interval"); //seconds
-    idleActivityTransitionDuration= Settings::getFloat("idle_activity_transition_duration"); //seconds
 
     idleActivityNumUpdates= Settings::getInt("idle_activity_num_updates"); //seconds
 
@@ -36,6 +37,8 @@ FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,
     lastFeatureWeights.resize(num_features, 0.);
     videoCycleIndex = 0;
     blink =false;
+    lastLightUpdateTime = 0.;
+    lightsUpdated = true;
 
     //Make loudness the only active feature
     featureWeights[0]= 1.;
@@ -43,7 +46,6 @@ FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,
     videoMaxIndex = 1;
     activityType = ActivityTypes::NONE;
     activeFeatureIndex=0;
-    idle_active_video_count =0;
     input_activity_flag = 0;
     blinkTimer =0;
     setSpeed(0);
@@ -63,7 +65,7 @@ void FeatureControl::update(){
         cycleVideo();
     }
 
-    if ((currentTime - blinkTimer) > 0.02 && blink){
+    if ((currentTime - blinkTimer) > 0.05 && blink){
         blinkOff();
     }
 
@@ -72,13 +74,16 @@ void FeatureControl::update(){
     switch (state){
     case HUMAN_ACTIVE:
         //Todo
-        updateFeatureWeights(false);
+        updateFeatureWeights(true);
         break;
 
     case IDLE:
         updateFeatureWeights(true);
         if (weightsChanged()){
             getNewVideos(false);
+            updateLights();
+        }
+        if (!lightsUpdated){
             updateLights();
         }
         break;
@@ -88,12 +93,10 @@ void FeatureControl::update(){
         float idleTime = currentTime -idleActivatedTime;
         if (idle_active_state == IDLE_ACTIVE_TRANSITION){
             lastActiveCycle = currentTime;
-//            (*fge)[0]->setValue(idleActivityTransitionDuration/idleActivityNumUpdates);
 
-            if ((currentTime - idleActivatedTime) > idleActivityTimings[videoCycleIndex]){
-                idle_active_video_count++;
-                cycleVideo();
-            }
+//            if ((currentTime - idleActivatedTime) > idleActivityTimings[videoCycleIndex]){
+//                cycleVideo();
+//            }
 
             if (videoCycleIndex >= (idleActivityNumUpdates-1)){
                 idle_active_state = IDLE_ACTIVE_STABLE;
@@ -156,26 +159,20 @@ void FeatureControl::toIdle(){
 void FeatureControl::toIdleActive(){
     state = IDLE_ACTIVE;
     idle_active_state = IDLE_ACTIVE_TRANSITION;
-    idle_active_video_count = 0;
     setSpeed(9);
     activityType = ActivityTypes(rand()% (to_ut(ActivityTypes::last)) +1);
-    idleFeatureIndex =idleActiveFeatureIndexes[rand()%numIdleActiveFeatures];
-    targetFeatureValues[idleFeatureIndex] = 0.;
-    updateActiveFeature(idleFeatureIndex, 0., false);
+    currentActiveFeatureIndex =idleActiveFeatureIndexes[rand()%numIdleActiveFeatures];
+    targetFeatureValues[currentActiveFeatureIndex] = 0.;
+    updateActiveFeature(currentActiveFeatureIndex, 0., false);
 
     idleActivityValues.clear();
-    idleActivityTimings.clear();
     int half_point = idleActivityNumUpdates/2;
 
     for (int step =0; step < idleActivityNumUpdates; step++){
-        idleActivityTimings.push_back(step*idleActivityTransitionDuration/idleActivityNumUpdates);
         switch (activityType){
         case ActivityTypes::ASCENDING:
             idleActivityValues.push_back(step*1./(idleActivityNumUpdates-1));
             break;
-//        case ActivityTypes::DESCENDING:
-//            idleActivityValues.push_back(1. -float(step) / (idleActivityNumUpdates-1));
-//            break;
         case ActivityTypes::UP_DOWN:
             //0 to 1
             if (step <half_point){
@@ -186,16 +183,7 @@ void FeatureControl::toIdleActive(){
                 idleActivityValues.push_back(1 - (step-half_point) *1./(half_point-1));
             }
             break;
-//        case ActivityTypes::DOWN_UP:
-//            //1 to 0
-//            if (step <half_point){
-//                idleActivityValues.push_back(1. -float(step)/(half_point-1));
-//            }
-//            //0 to 1
-//            else{
-//                idleActivityValues.push_back(step*1./(half_point));
-//            }
-//            break;
+
         }
     }
     lastActivityTime = ofGetElapsedTimef();
@@ -208,14 +196,14 @@ void FeatureControl::toIdleActive(){
     vector<float> tempSearchvalues = targetFeatureValues;
     vector<float> tempFeatureWeights;
     tempFeatureWeights.resize(tempSearchvalues.size(), 0);
-    tempFeatureWeights[idleFeatureIndex ]=1.;
+    tempFeatureWeights[currentActiveFeatureIndex ]=1.;
 
     for (auto value: idleActivityValues){
-        tempSearchvalues[idleFeatureIndex] = value;
-        fKNN->getKNN(tempSearchvalues, tempFeatureWeights);
-        videoIndexes.push_back( fKNN->getSearchResultsDistance(1,true, numVideosInRange)[0]);
+        tempSearchvalues[currentActiveFeatureIndex] = value;
+//        fKNN->getKNN(tempSearchvalues, tempFeatureWeights, searchDistances);
+        fSearch->getKNN(tempSearchvalues, tempFeatureWeights, searchDistances);
+        videoIndexes.push_back( fSearch->getSearchResultsDistance(1,true, numVideosInRange)[0]);
     }
-
     videos =  dbl->getVideoPairsFromIndexes(videoIndexes);
     videoMaxIndex = videos.size();
     (*fge)[1]->setValue(videoMaxIndex);
@@ -227,27 +215,26 @@ void FeatureControl::toHumanActive(){
 }
 
 void FeatureControl::setIdleFeature(int index){
-    idleFeatureIndex = index;
-    targetFeatureValues[idleFeatureIndex] = 0.;
-    updateActiveFeature(idleFeatureIndex, 1.);
+    currentActiveFeatureIndex = index;
+    targetFeatureValues[currentActiveFeatureIndex] = 0.;
+    updateActiveFeature(currentActiveFeatureIndex, 1., true);
 }
 
 void FeatureControl::getNewVideos(bool play){
 
-    fKNN->getKNN(targetFeatureValues, featureWeights);
+    if (state == HUMAN_ACTIVE){
+        //dont do so often
+    }
+//    fKNN->getKNN(targetFeatureValues, featureWeights, searchDistances);
+    fSearch->getKNN(targetFeatureValues, featureWeights, searchDistances);
+//    videoIndexes = fKNN->getSearchResultsDistance(32,true, numVideosInRange);
+    videoIndexes = fSearch->getSearchResultsDistance(32,true, numVideosInRange);
+
     if (state ==IDLE || state ==IDLE_ACTIVE){
-        videoIndexes = fKNN->getSearchResultsDistance(3,true, numVideosInRange);
-        videoMaxIndex = videoIndexes.size();
-        (*fge)[1]->setValue(videoMaxIndex);
+        videoMaxIndex = CLAMP(videoIndexes.size(), 1, 32);
     }
 
-    else if (state ==HUMAN_ACTIVE){
-//        videoMaxIndex = min(videoMaxIndex, 32);
-//        videoIndexes = fKNN->getSearchResultsDistance(1,true, numVideosInRange);
-//        videoMaxIndex = videoIndexes.size();
-        (*fge)[1]->setValue(videoMaxIndex);
-        videoIndexes = fKNN->getSearchResultsDistance(32, true, numVideosInRange);
-    }
+    (*fge)[1]->setValue(videoMaxIndex);
 
     videos = dbl->getVideoPairsFromIndexes(videoIndexes);
 
@@ -272,6 +259,9 @@ void FeatureControl::playVideo(){
     videoStartTime = ofGetElapsedTimef();
     coms->publishVideoNow( playingVideo.first, true);
     updateFeatureValues(dbl->getFeaturesFromindex(playingVideo.second));
+    updateLights();
+    blinkOn();
+
     pcr->updateLine(playingVideo.second);
     pcr->updateLine(videos[(videoCycleIndex+1)%videoMaxIndex].second);
 
@@ -282,7 +272,7 @@ void FeatureControl::cycleVideo(){
     playingVideo = videos[videoCycleIndex];
     playedIdleVideos ++;
     if (state ==IDLE_ACTIVE){
-        targetFeatureValues[idleFeatureIndex]= idleActivityValues[videoCycleIndex];
+        targetFeatureValues[currentActiveFeatureIndex]= idleActivityValues[videoCycleIndex];
     }
     if (shouldSlowdown()){
         incrementSpeed(-1);
@@ -296,10 +286,10 @@ void FeatureControl::playRandomVideo(){
     playVideo();
 }
 
-void FeatureControl::updateFeatureWeights(bool ignoreIdle){
+void FeatureControl::updateFeatureWeights(bool ignoreActive){
     for (int i = 0; i <featureWeights.size(); i++){
-        if (ignoreIdle){
-            if (i ==idleFeatureIndex){
+        if (ignoreActive){
+            if (i ==currentActiveFeatureIndex){
                 continue;
             }
         }
@@ -309,95 +299,20 @@ void FeatureControl::updateFeatureWeights(bool ignoreIdle){
         }
 
         //After [idleTimeout] seconds of inactivity decrement the weight by 0.1 every 0.5 seconds
-        if (inactiveCounter[i]>idleTimeout*secondsToFrames && featureWeights[i] >0){
+        if (inactiveCounter[i]>(featureTimeout*secondsToFrames) && featureWeights[i] >0){
             featureWeights[i] = CLAMP(featureWeights[i] - featureDecayRate, 0., 1.);
         }
 
-        else if (inactiveCounter[i]>idleTimeout*secondsToFrames && featureWeights[i] ==0.){
+        else if (inactiveCounter[i]>featureTimeout*secondsToFrames && featureWeights[i] ==0.){
             featureActive[i]=false;
         }
     }
-
-}
-
-void FeatureControl::draw(){
-    ostringstream oss;
-    oss.str("");
-    oss << "State" <<endl;
-    oss << stateStrings[state]<<endl;
-    oss << activityTypeStrings[to_ut(activityType)]<<endl;
-    ofDrawBitmapString(oss.str(), 0,0);
-
-    oss.str("");
-    oss << "" <<endl;
-    oss << "Idle timer"<<endl;
-    oss << "Last Act."<<endl;
-    oss << "Act. index" <<endl;
-    oss << "Idle Index" <<endl;
-    oss << "Video name"<<endl;
-    oss << "Video index" <<endl;
-    oss << "Video time" <<endl;
-    oss << "Video length" <<endl;
-    oss << "Cycle index"<<endl;
-    oss << "Cycle time" <<endl;
-    oss << "Idle played" <<endl;
-    oss << "Idle min vid" <<endl;
-    oss << "Videos found" <<endl;
-
-
-    ofDrawBitmapString(oss.str(), 100,0);
-
-    oss.str("");
-    oss << "Tnfo" <<endl;
-    oss << idleTimeCounter <<endl;
-    oss << lastActivityTime<<endl;
-    oss << activeFeatureIndex <<endl;
-    oss << idleFeatureIndex <<endl;
-    oss << playingVideo.first <<endl;
-    oss << playingVideo.second <<endl;
-    oss << currentTime -videoStartTime <<endl;
-    oss << videoLength <<endl;
-    oss << videoCycleIndex <<endl;
-    oss << videoCycleTimer <<endl;
-
-    oss << playedIdleVideos <<endl;
-    oss << idleMinVideos <<endl;
-    oss<< numVideosInRange<<endl;
-
-    ofDrawBitmapString(oss.str(), 200,0);
-
-    oss.str("");
-    oss << "Target" <<endl;
-    for (auto featureTarget : targetFeatureValues){
-        oss << setprecision(2) << featureTarget <<endl;
-    }
-    ofDrawBitmapString(oss.str(), 350,0);
-
-    oss.str("");
-    oss << "Value" <<endl;
-    for (auto featureV: featureValues){
-        oss << setprecision(2) << featureV <<endl;
-    }
-    ofDrawBitmapString(oss.str(), 400,0);
-
-    oss.str("");
-    oss << "Weight" <<endl;
-    for (auto featureW: featureWeights){
-        oss << setprecision(2) <<featureW <<endl;
-    }
-    ofDrawBitmapString(oss.str(), 450,0);
-
-    oss.str("");
-    oss << "Active" <<endl;
-    for (auto featureA: featureActive){
-        oss << featureA <<endl;
-    }
-    ofDrawBitmapString(oss.str(), 500,0);
 }
 
 void FeatureControl::updateFeatureValues(vector<float> fv){
     lastFeatureValues = featureValues;
     featureValues = fv;
+
     for (int i =0; i <featureValues.size(); i++){
         if (!featureActive[i]){
             targetFeatureValues[i] = featureValues[i];
@@ -406,38 +321,46 @@ void FeatureControl::updateFeatureValues(vector<float> fv){
 }
 
 void FeatureControl::incrementFeatureTarget(int index, float step){
+    currentActiveFeatureIndex = index;
     if (index ==COLOR_FEATURE_INDEX) {
         float t;
-        targetFeatureValues[index] = modf(targetFeatureValues[index]+step, &t );
+        float t2 = targetFeatureValues[index];
+        targetFeatureValues[index] = modf(t2+step, &t );
         if (targetFeatureValues[index] <0.){
             targetFeatureValues[index] = 1+targetFeatureValues[index];
         }
     }
-    if (index ==TILT_FEATURE_INDEX) {
+    else if (index ==TILT_FEATURE_INDEX) {
         targetFeatureValues[index] = CLAMP(targetFeatureValues[index]+step, -0.5, 0.5);
     }
     else{
         targetFeatureValues[index] =CLAMP(targetFeatureValues[index]+step, 0., 1.);
 
     }
-    updateActiveFeature(index, 1);
+    updateActiveFeature(index, 1, true);
 }
 
 void FeatureControl::toggleFeatureTarget(int index){
     float v = targetFeatureValues[index];
+    currentActiveFeatureIndex = index;
 
     if (index ==COLOR_FEATURE_INDEX){
         float t;
         float target_value = modf(v +0.5, &t);
         targetFeatureValues[index] =target_value;
     }
+    else if (index ==TILT_FEATURE_INDEX){
+        float target_value = -0.5;
+        if (v<.5) target_value = 0.5;
+        targetFeatureValues[index] =CLAMP(target_value, -0.5, 0.5);
+    }
     else{
-        int target_value = 0.;
+        float target_value = 0.;
         if (v<.5) target_value = 1.;
         targetFeatureValues[index] =CLAMP(target_value, 0., 1.);
     }
 
-    updateActiveFeature(index, 1);
+    updateActiveFeature(index, 1, true);
 }
 
 void FeatureControl::updateActiveFeature(int index, int timeoutOffset, bool trigger){
@@ -449,16 +372,16 @@ void FeatureControl::updateActiveFeature(int index, int timeoutOffset, bool trig
     coms->sendLightControl(index+3, 4096);
 
     //Timeout the other features
-    for(int i=0; i<this->inactiveCounter.size(); i++){
-        if (i ==index )continue;
-        //Set other active feautres to timeout limit - offset
-        else if (featureActive[index]){
-            int thresh = idleTimeout*secondsToFrames - timeoutOffset*secondsToFrames;
-            if (inactiveCounter[i] < thresh){
-                inactiveCounter[i] = thresh;
-            }
-        }
-    }
+//    for(int i=0; i<this->inactiveCounter.size(); i++){
+//        if (i ==index )continue;
+//        //Set other active feautres to timeout limit - offset
+//        else if (featureActive[index]){
+//            int thresh = idleTimeout*secondsToFrames - timeoutOffset*secondsToFrames;
+//            if (inactiveCounter[i] < thresh){
+//                inactiveCounter[i] = thresh;
+//            }
+//        }
+//    }
     if (trigger){
         getNewVideos();
     }
@@ -478,18 +401,36 @@ bool FeatureControl::shouldSlowdown(){
     return false;
 }
 
-int FeatureControl::incrementSearchRadius(int step){
+void FeatureControl::incrementSearchRadius(int step){
     int t =  CLAMP(videoMaxIndex+step, 1, 32);
-    if (t > videos.size()){
-        return videoMaxIndex;
-    }
-    videoMaxIndex = t;
-    (*fge)[1]->setValue(videoMaxIndex);
-    return videoMaxIndex;
+    setSearchRadius(t);
 }
 
+void FeatureControl::setSearchRadius(int value){
+     videoMaxIndex =value;
+     (*fge)[1]->setValue(videoMaxIndex);
+ }
+
 void FeatureControl::incrementSpeed(int step){
-    setSpeed( CLAMP(speedSetting+step, 0, 14));
+    setSpeed( CLAMP(speedSetting+step, 0, NUM_SPEEDS));
+}
+
+void FeatureControl::toggleSpeed(){
+    if (speedSetting < NUM_SPEEDS){
+        setSpeed(NUM_SPEEDS);
+    }
+    else if (speedSetting == NUM_SPEEDS){
+        setSpeed(0);
+    }
+}
+
+void FeatureControl::toggleNeighbours(){
+    if (videoMaxIndex > 16){
+        setSearchRadius(1);
+    }
+    else {
+        setSearchRadius(32);
+    }
 }
 
 void FeatureControl::setSpeed(int value){
@@ -501,27 +442,159 @@ void FeatureControl::setSpeed(int value){
     }
 
     (*fge)[0]->setValue(videoCycleTimer);
+    (*fge)[0]->setSecondary(speedSetting);
 }
 
 
 void FeatureControl::updateLights(){
-    for (int index = 0 ; index < featureValues.size(); index ++){
-        int lightValue = 0;
-        lightValue += 4096*0.25 * featureValues[index];
-        lightValue += 4096*0.75 * featureActive[index];
-        coms->sendLightControl(index +3, lightValue);
+    if (currentTime - lastLightUpdateTime > 0.05){
+
+        for (int index = 0 ; index < featureValues.size(); index ++){
+            int lightValue = 0;
+//            lightValue += 4095*0.25 * featureValues[index];
+            lightValue += 4095*0.75 * featureActive[index];
+            coms->sendLightControl(index +3, lightValue);
+        }
+
+        lastLightUpdateTime = currentTime;
+        lightsUpdated =true;
+    }
+    else{
+        lightsUpdated =false;
     }
 }
 
 
 void FeatureControl::blinkOn(){
-    coms->sendLightControl(0, 4096);
+    coms->sendLightControl(1, 4095);
     blink = true;
     blinkTimer= currentTime;
 
 }
 
 void FeatureControl::blinkOff(){
-    coms->sendLightControl(0, 0);
+    coms->sendLightControl(1, 0);
     blink = false;
+}
+
+template <typename T>
+int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
+void FeatureControl::updateFeatureElements(){
+    for (int i = 0; i <numFeatures(); i++){
+        //Do some interpolation on the value
+        float diff = featureValues[i] - lastFeatureValues[i];
+        float inc = sgn(diff)*diff*diff;
+
+        //Special  case for colours
+        if (i == COLOR_FEATURE_INDEX){
+            inc = diff;
+        }
+
+        lastFeatureValues[i]+=inc;
+
+        (*fge)[i+2]->setWeight(getWeight(i));
+        (*fge)[i+2]->setValue(getLastValue(i));
+        (*fge)[i+2]->setTarget(getTargetValue(i));
+        (*fge)[i+2]->setActive(getActive(i));
+    }
+}
+
+void FeatureControl::draw(){
+    ofPushMatrix();
+    ostringstream oss;
+    for (int i = 0; i<videoMaxIndex; i++){
+        oss<< searchDistances[i] <<endl;
+    }
+    ofDrawBitmapString(oss.str(),0,0);
+
+    oss.str("");
+    for (int i = 0; i<videoMaxIndex; i++){
+        oss<< videoIndexes[i] <<endl;
+    }
+    ofTranslate(100, 0);
+    ofDrawBitmapString(oss.str(),0,0);
+
+    oss.str("");
+    oss << "State" <<endl;
+    oss << stateStrings[state]<<endl;
+    oss << activityTypeStrings[to_ut(activityType)]<<endl;
+    ofTranslate(30, 0);
+    ofDrawBitmapString(oss.str(), 0,0);
+
+    oss.str("");
+    oss << "" <<endl;
+    oss << "Idle timer"<<endl;
+    oss << "Last Act."<<endl;
+    oss << "Act. index" <<endl;
+    oss << "Idle Index" <<endl;
+    oss << "Video name"<<endl;
+    oss << "Video index" <<endl;
+    oss << "Video time" <<endl;
+    oss << "Video length" <<endl;
+    oss << "Cycle index"<<endl;
+    oss << "Cycle time" <<endl;
+    oss << "Idle played" <<endl;
+    oss << "Idle min vid" <<endl;
+    oss << "Videos found" <<endl;
+
+    ofTranslate(100, 0);
+    ofDrawBitmapString(oss.str(), 0,0);
+
+    oss.str("");
+    oss << "Tnfo" <<endl;
+    oss << idleTimeCounter <<endl;
+    oss << lastActivityTime<<endl;
+    oss << activeFeatureIndex <<endl;
+    oss << currentActiveFeatureIndex <<endl;
+    oss << playingVideo.first <<endl;
+    oss << playingVideo.second <<endl;
+    oss << currentTime -videoStartTime <<endl;
+    oss << videoLength <<endl;
+    oss << videoCycleIndex <<endl;
+    oss << videoCycleTimer <<endl;
+
+    oss << playedIdleVideos <<endl;
+    oss << idleMinVideos <<endl;
+    oss<< numVideosInRange<<endl;
+
+    ofTranslate(100, 0);
+    ofDrawBitmapString(oss.str(), 0,0);
+
+    oss.str("");
+    oss << "Target" <<endl;
+    for (auto featureTarget : targetFeatureValues){
+        oss << setprecision(2) << featureTarget <<endl;
+    }
+    ofTranslate(150, 0);
+    ofDrawBitmapString(oss.str(), 0,0);
+
+    oss.str("");
+    oss << "Value" <<endl;
+    for (auto featureV: featureValues){
+        oss << setprecision(2) << featureV <<endl;
+    }
+
+    ofTranslate(50, 0);
+    ofDrawBitmapString(oss.str(), 0,0);
+
+    oss.str("");
+    oss << "Weight" <<endl;
+    for (auto featureW: featureWeights){
+        oss << setprecision(2) <<featureW <<endl;
+    }
+    ofTranslate(50, 0);
+    ofDrawBitmapString(oss.str(), 0,0);
+
+    oss.str("");
+    oss << "Active" <<endl;
+    for (auto featureA: featureActive){
+        oss << featureA <<endl;
+    }
+    ofTranslate(50, 0);
+    ofDrawBitmapString(oss.str(), 0,0);
+
+    ofPopMatrix();
 }

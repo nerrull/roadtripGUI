@@ -61,7 +61,7 @@ public:
     vector<vector<float>> getPointFeatureDistances(const vector<float> search_point, const vector<float> index_weights);
     ConnectionGraph getLocalConnections(int featureIndex);
 
-    void getKNN(vector<float> search_point, vector<float> search_weights);
+    void getKNN(vector<float> search_point, vector<float> search_weights, vector<float> & dists);
     vector<int> getSearchResultsFixedNumber(int);
     vector<int> getSearchResultsDistance(int minVideos, bool shuffle , int& numWithinRange);
 
@@ -73,7 +73,7 @@ public:
 
     int num_points;
     int playingIndex =0;
-    int numSearchPoints = 32;
+    int numSearchPoints = 64;
     float threshold_distance = 0.05;
 
 

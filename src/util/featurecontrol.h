@@ -3,11 +3,11 @@
 
 #include "ofMain.h"
 #include "util/featureKNN.h"
+#include "util/featuresearch.h"
 #include "util/databaseloader.h"
 #include "util/communication.h"
 #include "gui/elements/uielements.h"
 #include "gui/pointcloudrenderer.h"
-
 /*    IdleFeatures{
         AMPLITUDE = 0,
         SPEED =4,
@@ -19,6 +19,8 @@
         Spectral Centroid =1,
         Vehicle speed = 4,
         RPM =6,
+        TEMPERATURE =7,
+
         LIGHTNESS = 11,
         UNCERTAINTY = 12,
         VEGETATION = 17
@@ -28,7 +30,7 @@ const int IDLE_ACTIVE_TRANSITION = 0;
 const int IDLE_ACTIVE_STABLE =  1;
 const int COLOR_FEATURE_INDEX = 9;
 const int TILT_FEATURE_INDEX = 8;
-
+//const int NUM_SPEEDS= 14;
 const int COLOR_ELEMENT_INDEX = 11;
 
 class FeatureControl
@@ -68,12 +70,13 @@ public:
     int secondsToFrames = 60.;
     int numIdleFeatures= 4;
     int idleFeatureIndexes[4] = {0,4,5,6};
-    int numIdleActiveFeatures= 7;
-    int idleActiveFeatureIndexes[7] = {0,1,4,6,10,11,16};
+    int numIdleActiveFeatures= 8;
+    int idleActiveFeatureIndexes[8] = {0,1,4,6,7,10,11,16};
 
     BehaviourState state;
     ActivityTypes activityType;
     FeatureKNN* fKNN;
+    FeatureSearch* fSearch;
     DatabaseLoader* dbl;
     PointCloudRenderer* pcr;
     CommunicationManager* coms;
@@ -85,12 +88,12 @@ public:
 
     void incrementFeatureTarget(int index, float step);
     void toggleFeatureTarget(int index);
-    void updateActiveFeature(int index,int timeoutOffset, bool trigger = true);
+    void updateActiveFeature(int index,int timeoutOffset, bool trigger);
     bool shouldSlowdown();
     void registerInputActivity();
     void draw();
     void playRandomVideo();
-    int incrementSearchRadius(int step);
+    void incrementSearchRadius(int step);
     void incrementSpeed(int step);
     void setSpeed(int speed);
 
@@ -138,18 +141,12 @@ public:
         return false;
     }
 
-
-    float getValueDiff(int index){
-        return featureValues[index] - lastFeatureValues[index];
-    }
-
     int numFeatures(){
         return featureValues.size();
     }
 
-    void incrementLastFeatureValue(int index, float inc){
-        lastFeatureValues[index]+=inc;
-    }
+    void updateFeatureElements();
+
      pair<string, int> getPlayingVideo(){
         return playingVideo;
     }
@@ -161,11 +158,21 @@ public:
         return t;
     }
 
+    void toggleNeighbours();
+    void toggleSpeed();
+    void setSearchRadius(int);
+
     //State functions
     void updateState();
     void toIdle();
     void toIdleActive();
     void toHumanActive();
+
+
+    static const int NUM_SPEEDS = 16;
+    const string SPEEDSTRINGS [17]= {"Max", "4", "3", "2", "1.5", "1", "2/3", "1/2","1/3","1/4","1/6", "1/8", "1/10", "1/12", "1/16", "1/24", "1/32"};
+    const float SPEEDS [17]=        {-1,     4.,   3., 2., 1.5,   1., 2./3.,  0.5,  1./3., 1./4., 1./6., 1./8., 1./10., 1./12, 1./16, 1./24., 1./32.};
+
 
 private:
 
@@ -178,6 +185,9 @@ private:
     void updateLights();
     void blinkOn();
     void blinkOff();
+
+    float lastLightUpdateTime;
+    bool lightsUpdated;
 
     //Video search/playback functions
     void getNewVideos(bool play= true);
@@ -213,7 +223,7 @@ private:
     int numVideosInRange = 0;
 
     //Feature indexes
-    int idleFeatureIndex;
+    int currentActiveFeatureIndex;
     int activeFeatureIndex;
 
     bool input_activity_flag;
@@ -229,6 +239,8 @@ private:
     vector<float> featureWeights;
     vector<float> lastFeatureWeights;
 
+    vector<float> searchDistances;
+
     vector<pair<string, int>> videos;
     pair<string, int> playingVideo;
 
@@ -237,11 +249,8 @@ private:
     int speedSetting;
     float videoLength;
 
-    float SPEEDS [15]= {-1, 4., 3., 2., 1.5, 1., 0.5, .4, .333, .25, .2, .125, .1, .063, .033};
-    string SPEEDSTRINGS [15]= {"MAX", "4", "3", "2", "1.5", "1", "1/2","1/3","1/4","1/5", "1/8","1/10", "1/12", "1/16", "1/32"};
 
     int idle_active_state;
-    int idle_active_video_count;
 
 
 

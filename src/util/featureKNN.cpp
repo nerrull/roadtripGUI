@@ -154,7 +154,7 @@ void FeatureKNN::createFeatureGroups(){
             int numNeighbours = 0;
             vector<double> search_point;
             search_point.push_back(v);
-            tempKD.getKNN(search_point,values.size(), s_i, s_d);
+//            tempKD.getKNN(search_point,values.size(), s_i, s_d);
             vector<int> neighbours;
 
             for (int idx =1; idx<s_d.size(); idx++){
@@ -241,15 +241,20 @@ vector<vector<float>> FeatureKNN::getPointFeatureDistances(const vector<float> s
 }
 
 
-void FeatureKNN::getKNN(vector<float> search_point, vector<float> search_weights)
+void FeatureKNN::getKNN(vector<float> search_point, vector<float> search_weights, vector<float> &search_distances)
 {
+    float t = ofGetElapsedTimef();
+
+    search_distances.clear();
     vector<double> double_point(search_point.begin(),search_point.end());
     vector<double> double_weights(search_weights.begin(),search_weights.end());
     kdTree.getWeightedKNN(double_point, numSearchPoints, search_indexes, search_dists, double_weights);
     for (int i =0; i< search_dists.size();i++){
         search_dists[i]= sqrt(search_dists[i]);
+        search_distances.push_back(search_dists[i]);
     }
-    int test =0;
+    ofLogError( ofToString(ofGetElapsedTimef() -t)) <<"Time for KNN search with featureKNN" ;
+
 }
 
 vector<int> FeatureKNN::getSearchResultsDistance(int minVideos, bool shuffle, int & numWithinRange){
