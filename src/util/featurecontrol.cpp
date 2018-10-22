@@ -100,6 +100,8 @@ void FeatureControl::update(){
 
             videoCycleTimer = idleActivityTimings[videoCycleIndex];
             videoLength = dbl->getVideoLength(playingVideo.second);
+            (*fge)[0]->setValue(videoCycleTimer);
+
 
             if (videoCycleIndex >= (videoIndexes.size()-1)){
                 idle_active_state = IDLE_ACTIVE_STABLE;
@@ -162,7 +164,7 @@ void FeatureControl::toIdle(){
 void FeatureControl::toIdleActive(){
     state = IDLE_ACTIVE;
     idle_active_state = IDLE_ACTIVE_TRANSITION;
-//    setSpeed(9);
+    setSpeed(0);
     activityType = ActivityType(rand()% (to_ut(ActivityType::last)) +1);
     activityModifier = ActivityModifier(rand()% (to_ut(ActivityModifier::last)+1));
 
@@ -440,12 +442,13 @@ bool FeatureControl::shouldSlowdown(){
 }
 
 void FeatureControl::incrementSearchRadius(int step){
-    int t =  CLAMP(videoMaxIndex+step, 1, 32);
-    setSearchRadius(t);
+    setSearchRadius(videoMaxIndex +step);
 }
 
 void FeatureControl::setSearchRadius(int value){
-     videoMaxIndex =value;
+     int t =  CLAMP(value, 1, videos.size());
+     t =  CLAMP(t, 1, 32);
+     videoMaxIndex =t;
      (*fge)[1]->setValue(videoMaxIndex);
  }
 
