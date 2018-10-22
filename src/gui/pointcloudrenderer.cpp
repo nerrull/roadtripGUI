@@ -180,34 +180,6 @@ void PointCloudRenderer::draw()
 
 }
 
-
-
-
-void PointCloudRenderer::meshFromConnections(vector<NodeConnection> connections){
-    connectionMesh.clear();
-    vector<ofIndexType> indices;
-    int index =0;
-    for (NodeConnection conn: connections){
-
-        connectionMesh.addVertex(visualization_points[conn.firstPointIndex]);
-        connectionMesh.addVertex(visualization_points[conn.secondPointIndex]);
-        indices.push_back(index);
-        index++;
-        indices.push_back(index);
-        index++;
-        ofColor c1,c2 ;
-        c1 = colors[conn.firstPointIndex];
-        c2 = colors[conn.secondPointIndex];
-        c1.a = int(125/(conn.depth+1))+60;
-        c2.a = int(125./(conn.depth+1))+60;
-
-        connectionMesh.addColor(c1);
-        connectionMesh.addColor(c2);
-
-    }
-    connectionMesh.addIndices(indices);
-}
-
 void PointCloudRenderer::drawLines(){
     for (std::size_t i = 0; i < visualization_points.size(); i++)
     {

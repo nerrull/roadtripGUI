@@ -21,8 +21,11 @@ FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,
 
     featureDecayRate = 1./(60.*Settings::getFloat("feature_decay_sec"));
     idleActivityInterval = Settings::getFloat("idle_activity_min_interval"); //seconds
-
     idleActivityNumUpdates= Settings::getInt("idle_activity_num_updates"); //seconds
+
+    idle_activity_min_duration = Settings::getFloat("idle_activity_min_duration"); //seconds
+    idle_activity_max_duration = Settings::getFloat("idle_activity_max_duration"); //seconds
+
 
     state = IDLE;
     int num_features =21;
@@ -44,7 +47,8 @@ FeatureControl::FeatureControl(DatabaseLoader *dbl, CommunicationManager  *coms,
     featureWeights[0]= 1.;
     playingVideo = pair<string, int>("Empty", -1);
     videoMaxIndex = 1;
-    activityType = ActivityTypes::NONE;
+    activityType = ActivityType::NONE;
+    activityModifier = ActivityModifier::NONE;
     activeFeatureIndex=0;
     input_activity_flag = 0;
     blinkTimer =0;
@@ -94,9 +98,8 @@ void FeatureControl::update(){
         if (idle_active_state == IDLE_ACTIVE_TRANSITION){
             lastActiveCycle = currentTime;
 
-//            if ((currentTime - idleActivatedTime) > idleActivityTimings[videoCycleIndex]){
-//                cycleVideo();
-//            }
+            videoCycleTimer = idleActivityTimings[videoCycleIndex];
+            videoLength = dbl->getVideoLength(playingVideo.second);
 
             if (videoCycleIndex >= (videoIndexes.size()-1)){
                 idle_active_state = IDLE_ACTIVE_STABLE;
@@ -138,7 +141,7 @@ void FeatureControl::updateState(){
         break;
     case IDLE_ACTIVE:
         if (input_activity_flag){
-            activityType = ActivityTypes::NONE;
+            activityType = ActivityType::NONE;
 //            getNewVideos();
             toHumanActive();
             break;
@@ -159,27 +162,59 @@ void FeatureControl::toIdle(){
 void FeatureControl::toIdleActive(){
     state = IDLE_ACTIVE;
     idle_active_state = IDLE_ACTIVE_TRANSITION;
-    setSpeed(9);
-    activityType = ActivityTypes(rand()% (to_ut(ActivityTypes::last)) +1);
+//    setSpeed(9);
+    activityType = ActivityType(rand()% (to_ut(ActivityType::last)) +1);
+    activityModifier = ActivityModifier(rand()% (to_ut(ActivityModifier::last)+1));
+
+    float activityDuration = ofRandom(idle_activity_min_duration, idle_activity_max_duration);
+
     currentActiveFeatureIndex =idleActiveFeatureIndexes[rand()%numIdleActiveFeatures];
     targetFeatureValues[currentActiveFeatureIndex] = 0.;
     updateActiveFeature(currentActiveFeatureIndex, 0., false);
 
     idleActivityValues.clear();
-    int half_point = idleActivityNumUpdates/2;
-    int num_steps =idleActivityNumUpdates;
-    if (activityType == ActivityTypes::UP_DOWN){
-        num_steps = 15;
+    idleActivityTimings.clear();
+    int num_steps =idleActivityNumUpdates*activityDuration/2;
+
+    if (activityType == ActivityType::UP_DOWN){
+        num_steps = num_steps/2;
     }
+
+    float linear_time_step = 1./num_steps;
+    float time =0.;
+
     for (int step =0; step <= num_steps; step++){
         idleActivityValues.push_back(step*1./(num_steps));
+
+        if (activityModifier == ActivityModifier::ACCELERATE){
+             idleActivityTimings.push_back(sqrt(time)*activityDuration);
+        }
+        else if (activityModifier == ActivityModifier::DECELERATE){
+            idleActivityTimings.push_back(pow(time,2)*activityDuration);
+        }
+        else{
+            //NONE
+            idleActivityTimings.push_back(time*activityDuration);
+        }
+        time +=linear_time_step;
     }
-    if (activityType ==ActivityTypes::UP_DOWN){
+
+    for (int step =0; step <= num_steps-1; step++){
+        idleActivityTimings[step] = idleActivityTimings[step+1] -idleActivityTimings[step];
+    }
+
+    if (activityType == ActivityType::UP_DOWN){
         vector<float> rev (idleActivityValues.begin(),idleActivityValues.end());
         std::reverse(rev.begin(), rev.end());
         rev.erase(rev.begin());
         idleActivityValues.insert(idleActivityValues.end(), rev.begin(), rev.end());
+
+        vector<float> rev_times (idleActivityTimings.begin(),idleActivityTimings.end());
+        std::reverse(rev_times.begin(), rev_times.end());
+        rev_times.erase(rev_times.begin());
+        idleActivityTimings.insert(idleActivityTimings.end(), rev_times.begin(), rev_times.end());
     }
+
     lastActivityTime = ofGetElapsedTimef();
     idleActivatedTime = ofGetElapsedTimef();
 
@@ -194,9 +229,8 @@ void FeatureControl::toIdleActive(){
 
     for (auto value: idleActivityValues){
         tempSearchvalues[currentActiveFeatureIndex] = value;
-//        fKNN->getKNN(tempSearchvalues, tempFeatureWeights, searchDistances);
         fSearch->getKNN(tempSearchvalues, tempFeatureWeights, searchDistances);
-        vector<int> results =fSearch->getSearchResultsDistance(3,true, numVideosInRange);
+        vector<int> results =fSearch->getSearchResultsDistance(32,true, numVideosInRange);
         int index = results[0];
         int i =0;
         bool already_in_list =std::find(videoIndexes.begin(), videoIndexes.end(), index) != videoIndexes.end();
@@ -207,9 +241,12 @@ void FeatureControl::toIdleActive(){
         }
         videoIndexes.push_back(index);
     }
+
+    idleActivityTimings[num_steps] = dbl->getVideoLength(videoIndexes[num_steps]);
+
     videos =  dbl->getVideoPairsFromIndexes(videoIndexes);
     videoMaxIndex = videos.size();
-    (*fge)[1]->setValue(videoMaxIndex);
+    (*fge)[1]->setValue(32);
 }
 
 void FeatureControl::toHumanActive(){
@@ -228,9 +265,7 @@ void FeatureControl::getNewVideos(bool play){
     if (state == HUMAN_ACTIVE){
         //dont do so often
     }
-//    fKNN->getKNN(targetFeatureValues, featureWeights, searchDistances);
     fSearch->getKNN(targetFeatureValues, featureWeights, searchDistances);
-//    videoIndexes = fKNN->getSearchResultsDistance(32,true, numVideosInRange);
     videoIndexes = fSearch->getSearchResultsDistance(32,true, numVideosInRange);
 
     if (state ==IDLE || state ==IDLE_ACTIVE){
@@ -451,7 +486,6 @@ void FeatureControl::setSpeed(int value){
 
 void FeatureControl::updateLights(){
     if (currentTime - lastLightUpdateTime > 0.05){
-
         for (int index = 0 ; index < featureValues.size(); index ++){
             int lightValue = 0;
 //            lightValue += 4095*0.25 * featureValues[index];
@@ -524,6 +558,8 @@ void FeatureControl::draw(){
     oss << "State" <<endl;
     oss << stateStrings[state]<<endl;
     oss << activityTypeStrings[to_ut(activityType)]<<endl;
+    oss << activitymodifierStrings[to_ut(activityModifier)]<<endl;
+
     ofTranslate(30, 0);
     ofDrawBitmapString(oss.str(), 0,0);
 
@@ -542,6 +578,8 @@ void FeatureControl::draw(){
     oss << "Idle played" <<endl;
     oss << "Idle min vid" <<endl;
     oss << "Videos found" <<endl;
+    oss << "Vid. max ind." <<endl;
+
 
     ofTranslate(100, 0);
     ofDrawBitmapString(oss.str(), 0,0);
@@ -562,6 +600,8 @@ void FeatureControl::draw(){
     oss << playedIdleVideos <<endl;
     oss << idleMinVideos <<endl;
     oss<< numVideosInRange<<endl;
+    oss<< videoMaxIndex<<endl;
+
 
     ofTranslate(100, 0);
     ofDrawBitmapString(oss.str(), 0,0);

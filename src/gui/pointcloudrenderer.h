@@ -2,8 +2,6 @@
 #define POINTCLOUDRENDERER_H
 
 #include "ofMain.h"
-#include "util/featureKNN.h"
-#include "gui/nodeparticlemanager.h"
 #include "gui/physicalline.h"
 #include "gui/curveline.h"
 
@@ -21,7 +19,6 @@ public:
 
     void setLayout(int x, int y, int w, int h);
     void updatePointPositions(vector<vector< float >> featureDistances, vector<float> weights);
-    void meshFromConnections(vector<NodeConnection>);
     void drawLines();
     void setActiveNodes(vector<int>);
     void setPlayingNode(int playingIndex);

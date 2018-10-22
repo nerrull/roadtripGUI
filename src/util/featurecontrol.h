@@ -2,12 +2,12 @@
 #define FEATURECONTROL_H
 
 #include "ofMain.h"
-#include "util/featureKNN.h"
 #include "util/featuresearch.h"
 #include "util/databaseloader.h"
 #include "util/communication.h"
 #include "gui/elements/uielements.h"
 #include "gui/pointcloudrenderer.h"
+
 /*    IdleFeatures{
         AMPLITUDE = 0,
         SPEED =4,
@@ -46,7 +46,7 @@ public:
     };
 
     string activityTypeStrings [5]= {"NONE","ASCENDING", "UP_DOWN", "DESCENDING", "DOWN_UP"};
-    enum class ActivityTypes{
+    enum class ActivityType{
         NONE,
         ASCENDING,
         UP_DOWN,
@@ -58,13 +58,13 @@ public:
     };
 
     string activitymodifierStrings [4]= {"NONE", "ACCELERATE", "DECELERATE", "RANDOM_TIMINGS"};
-    enum class ActivityModifiers{
+    enum class ActivityModifier{
         NONE,
         ACCELERATE,
         DECELERATE,
-        RANDOM_TIMINGS,
+//        RANDOM_TIMINGS,
         first = NONE,
-        last = RANDOM_TIMINGS
+        last = DECELERATE
     };
 
     int secondsToFrames = 60.;
@@ -74,8 +74,7 @@ public:
     int idleActiveFeatureIndexes[8] = {0,1,4,6,7,10,11,16};
 
     BehaviourState state;
-    ActivityTypes activityType;
-    FeatureKNN* fKNN;
+    ActivityType activityType;
     FeatureSearch* fSearch;
     DatabaseLoader* dbl;
     PointCloudRenderer* pcr;
@@ -201,9 +200,13 @@ private:
     float idleActivityTransitionDuration;
     float idleTimeout;
 
+    //Idle activity variables
+    float idle_activity_min_duration;
+    float idle_activity_max_duration;
     int idleActivityNumUpdates;
     deque<float> idleActivityValues;
     deque<float> idleActivityTimings;
+    ActivityModifier activityModifier;
 
     //Timers
     float lastActivityTime;
