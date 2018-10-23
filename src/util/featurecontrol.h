@@ -179,6 +179,7 @@ private:
     void setIdleFeature(int index);
     void updateFeatureWeights(bool ignoreIdle);
     void updateFeatureValues(vector<float> fv);
+    void timeoutOtherFeatures(int index);
 
     //Light functions
     void updateLights();

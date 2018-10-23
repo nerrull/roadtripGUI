@@ -99,7 +99,7 @@ void FeatureControl::update(){
             lastActiveCycle = currentTime;
 
             videoCycleTimer = idleActivityTimings[videoCycleIndex];
-            videoLength = dbl->getVideoLength(playingVideo.second);
+            videoLength = dbl->getVideoLength(playingVideo.second)-1;
             (*fge)[0]->setValue(videoCycleTimer);
 
 
@@ -110,9 +110,9 @@ void FeatureControl::update(){
 
         }
         else if ( idle_active_state == IDLE_ACTIVE_STABLE){
-            float vidlen = dbl->getVideoLength(playingVideo.second);
-            (*fge)[0]->setValue(vidlen-1);
-            if ((currentTime - lastActiveCycle)>= vidlen -1.1){
+            float vidlen = dbl->getVideoLength(playingVideo.second)-1;
+            (*fge)[0]->setValue(vidlen);
+            if ((currentTime - lastActiveCycle)>= vidlen ){
                 toIdle();
             }
         }
@@ -173,13 +173,14 @@ void FeatureControl::toIdleActive(){
     currentActiveFeatureIndex =idleActiveFeatureIndexes[rand()%numIdleActiveFeatures];
     targetFeatureValues[currentActiveFeatureIndex] = 0.;
     updateActiveFeature(currentActiveFeatureIndex, 0., false);
+    timeoutOtherFeatures(currentActiveFeatureIndex);
 
     idleActivityValues.clear();
     idleActivityTimings.clear();
     int num_steps =idleActivityNumUpdates*activityDuration/2;
 
     if (activityType == ActivityType::UP_DOWN){
-        num_steps = num_steps/2;
+        num_steps = num_steps;
     }
 
     float linear_time_step = 1./num_steps;
@@ -244,7 +245,7 @@ void FeatureControl::toIdleActive(){
         videoIndexes.push_back(index);
     }
 
-    idleActivityTimings[num_steps] = dbl->getVideoLength(videoIndexes[num_steps]);
+    idleActivityTimings[num_steps] = dbl->getVideoLength(videoIndexes[num_steps])-1;
 
     videos =  dbl->getVideoPairsFromIndexes(videoIndexes);
     videoMaxIndex = videos.size();
@@ -287,10 +288,10 @@ void FeatureControl::getNewVideos(bool play){
 
 void FeatureControl::playVideo(){
     //Todo: Let main loop know
-    videoLength = dbl->getVideoLength(playingVideo.second);
+    videoLength = dbl->getVideoLength(playingVideo.second)-1;
 
     if (speedSetting == 0){
-        videoCycleTimer = videoLength-1.;
+        videoCycleTimer = videoLength;
     }
 
     (*fge)[0]->reset();
@@ -411,21 +412,23 @@ void FeatureControl::updateActiveFeature(int index, int timeoutOffset, bool trig
     //Set light to max
     coms->sendLightControl(index+3, 4096);
 
-    //Timeout the other features
-//    for(int i=0; i<this->inactiveCounter.size(); i++){
-//        if (i ==index )continue;
-//        //Set other active feautres to timeout limit - offset
-//        else if (featureActive[index]){
-//            int thresh = idleTimeout*secondsToFrames - timeoutOffset*secondsToFrames;
-//            if (inactiveCounter[i] < thresh){
-//                inactiveCounter[i] = thresh;
-//            }
-//        }
-//    }
+
     if (trigger){
         getNewVideos();
     }
 }
+
+void FeatureControl::timeoutOtherFeatures(int index){
+    //Timeout the other features
+    for(int i=0; i<this->inactiveCounter.size(); i++){
+        if (i ==index )continue;
+        //Set other active feautres to timeout limit - offset
+        else if (featureActive[index]){
+            inactiveCounter[i] = featureTimeout*secondsToFrames ;
+        }
+    }
+}
+
 
 
 void FeatureControl::registerInputActivity(){
@@ -477,9 +480,9 @@ void FeatureControl::toggleNeighbours(){
 void FeatureControl::setSpeed(int value){
     speedSetting = value;
     videoCycleTimer = SPEEDS[speedSetting];
-    videoLength = dbl->getVideoLength(playingVideo.second);
+    videoLength = dbl->getVideoLength(playingVideo.second)-1;
     if (speedSetting == 0){
-        videoCycleTimer = videoLength-1.;
+        videoCycleTimer = videoLength;
     }
 
     (*fge)[0]->setValue(videoCycleTimer);

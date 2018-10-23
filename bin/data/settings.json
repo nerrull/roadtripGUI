@@ -9,7 +9,7 @@
     "monitor_height": 1080,
     "audio_device_id": 7,
     "windowed":false,
-    "dev_mode":true,
+    "dev_mode":false,
     "english":false,
 
     "idle_timeout": 30, //Seconds before idle behaviour kicks in
